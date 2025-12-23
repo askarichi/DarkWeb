@@ -1,0 +1,3863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Void Arena</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      touch-action: none;
+    }
+
+    body {
+      background: #0a0a12;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    #gameCanvas {
+      display: block;
+      background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a12 70%, #050508 100%);
+    }
+
+    /* Start Screen */
+    #startScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a12 70%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    #startScreen h1 {
+      font-size: 4rem;
+      color: #fff;
+      text-shadow: 0 0 20px #ff00ff, 0 0 40px #ff00ff, 0 0 60px #8000ff;
+      margin-bottom: 2rem;
+      letter-spacing: 0.3em;
+    }
+
+    #startScreen input {
+      width: 280px;
+      padding: 15px 20px;
+      font-size: 1.2rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid #ff00ff;
+      border-radius: 30px;
+      color: #fff;
+      outline: none;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    #startScreen input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .color-picker {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1.5rem;
+    }
+
+    .color-option {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 3px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .color-option:hover, .color-option.selected {
+      transform: scale(1.2);
+      border-color: #fff;
+      box-shadow: 0 0 15px currentColor;
+    }
+
+    #playBtn {
+      padding: 15px 50px;
+      font-size: 1.3rem;
+      background: linear-gradient(135deg, #ff00ff, #8000ff);
+      border: none;
+      border-radius: 30px;
+      color: #fff;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      transition: all 0.3s;
+      box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+    }
+
+    #playBtn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 40px rgba(255, 0, 255, 0.8);
+    }
+
+    #playBtn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #offlineBtn {
+      padding: 12px 40px;
+      font-size: 1rem;
+      background: linear-gradient(135deg, #00aa88, #006655);
+      border: none;
+      border-radius: 30px;
+      color: #fff;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      transition: all 0.3s;
+      box-shadow: 0 0 15px rgba(0, 170, 136, 0.4);
+      margin-top: 1rem;
+    }
+
+    #offlineBtn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(0, 170, 136, 0.7);
+    }
+
+    #connectionStatus {
+      color: #ff6666;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      min-height: 1.5em;
+    }
+
+    #serverInput {
+      width: 280px;
+      padding: 10px 15px;
+      font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid #444;
+      border-radius: 20px;
+      color: #888;
+      margin-top: 1rem;
+    }
+
+    /* HUD */
+    #hud {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    /* Leaderboard - TOP LEFT */
+    #leaderboard {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(10, 10, 20, 0.9);
+      border: 1px solid rgba(255, 0, 255, 0.4);
+      border-radius: 12px;
+      padding: 15px 20px;
+      min-width: 180px;
+      backdrop-filter: blur(10px);
+    }
+
+    #leaderboard h3 {
+      color: #ff00ff;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 12px;
+      text-align: center;
+      text-shadow: 0 0 10px #ff00ff;
+      border-bottom: 1px solid rgba(255, 0, 255, 0.3);
+      padding-bottom: 8px;
+    }
+
+    .leader-entry {
+      display: flex;
+      justify-content: space-between;
+      color: #aaa;
+      font-size: 0.8rem;
+      padding: 4px 0;
+      transition: all 0.2s;
+    }
+
+    .leader-entry.you {
+      color: #00ffff;
+      font-weight: bold;
+      text-shadow: 0 0 8px #00ffff;
+    }
+
+    /* Stats - TOP RIGHT */
+    #stats {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.75rem;
+      background: rgba(10, 10, 20, 0.7);
+      padding: 10px 15px;
+      border-radius: 8px;
+      backdrop-filter: blur(5px);
+    }
+
+    /* Abilities Container - BOTTOM LEFT */
+    #abilitiesLeft {
+      position: absolute;
+      bottom: 25px;
+      left: 25px;
+      display: flex;
+      gap: 12px;
+      pointer-events: auto;
+    }
+
+    .ability-btn {
+      width: 70px;
+      height: 70px;
+      border-radius: 16px;
+      border: none;
+      background: linear-gradient(145deg, rgba(30, 20, 50, 0.95), rgba(15, 10, 25, 0.95));
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-transform: uppercase;
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .ability-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    }
+
+    .ability-btn .icon {
+      font-size: 1.4rem;
+    }
+
+    .ability-btn .key {
+      font-size: 0.65rem;
+      opacity: 0.6;
+      letter-spacing: 0.05em;
+    }
+
+    .ability-btn .charges {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.6);
+      font-size: 0.7rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ability-btn .cooldown-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 0%;
+      background: rgba(0, 0, 0, 0.7);
+      transition: height 0.1s;
+    }
+
+    .ability-btn.spike {
+      border-left: 3px solid #ff4444;
+      box-shadow: 0 4px 15px rgba(255, 68, 68, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .ability-btn.spike .charges { color: #ff4444; }
+    .ability-btn.spike:hover {
+      box-shadow: 0 4px 25px rgba(255, 68, 68, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .ability-btn.shield {
+      border-left: 3px solid #44ff88;
+      box-shadow: 0 4px 15px rgba(68, 255, 136, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .ability-btn.shield .charges { color: #44ff88; }
+    .ability-btn.shield:hover {
+      box-shadow: 0 4px 25px rgba(68, 255, 136, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .ability-btn.freeze {
+      border-left: 3px solid #44aaff;
+      box-shadow: 0 4px 15px rgba(68, 170, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .ability-btn.freeze .charges { color: #44aaff; }
+    .ability-btn.freeze:hover {
+      box-shadow: 0 4px 25px rgba(68, 170, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .ability-btn.disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    /* Controls Container - BOTTOM RIGHT */
+    #controlsRight {
+      position: absolute;
+      bottom: 25px;
+      right: 180px;
+      display: flex;
+      gap: 12px;
+      pointer-events: auto;
+    }
+
+    .control-btn {
+      width: 70px;
+      height: 70px;
+      border-radius: 16px;
+      border: none;
+      background: linear-gradient(145deg, rgba(40, 20, 60, 0.95), rgba(20, 10, 35, 0.95));
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-transform: uppercase;
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      border-left: 3px solid rgba(255, 0, 255, 0.6);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .control-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    }
+
+    .control-btn .icon {
+      font-size: 1.4rem;
+    }
+
+    .control-btn .key-hint {
+      font-size: 0.6rem;
+      opacity: 0.6;
+    }
+
+    .control-btn:hover {
+      box-shadow: 0 4px 25px rgba(255, 0, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .control-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Minimap Container - BOTTOM RIGHT CORNER */
+    #minimapContainer {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 150px;
+      height: 150px;
+      pointer-events: none;
+    }
+
+    #minimap {
+      width: 150px;
+      height: 150px;
+      background: rgba(10, 10, 20, 0.9);
+      border: 2px solid rgba(255, 0, 255, 0.3);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Shield active indicator */
+    #shieldTimer {
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #44ff88;
+      font-size: 1.3rem;
+      font-weight: bold;
+      text-shadow: 0 0 20px #44ff88;
+      display: none;
+      background: rgba(10, 20, 15, 0.8);
+      padding: 8px 20px;
+      border-radius: 20px;
+      border: 1px solid rgba(68, 255, 136, 0.4);
+    }
+
+    /* Virtual Joystick - BOTTOM LEFT (mobile only, above abilities) */
+    #joystick {
+      position: absolute;
+      bottom: 120px;
+      left: 25px;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 0, 255, 0.3);
+      pointer-events: auto;
+      display: none;
+    }
+
+    #joystickKnob {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 0, 255, 0.6), rgba(128, 0, 255, 0.4));
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+    }
+
+    /* Death Screen */
+    #deathScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 80;
+    }
+
+    #deathScreen h2 {
+      color: #ff0040;
+      font-size: 3.5rem;
+      text-shadow: 0 0 40px #ff0040;
+      margin-bottom: 1rem;
+      letter-spacing: 0.2em;
+    }
+
+    #deathScreen p {
+      color: #fff;
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      #joystick {
+        display: block;
+        bottom: 120px;
+        left: 20px;
+      }
+      
+      #abilitiesLeft {
+        left: 15px;
+        bottom: 15px;
+        gap: 8px;
+      }
+      
+      .ability-btn {
+        width: 55px;
+        height: 55px;
+        font-size: 0.6rem;
+      }
+      
+      .ability-btn .icon {
+        font-size: 1.1rem;
+      }
+      
+      #controlsRight {
+        right: 130px;
+        bottom: 15px;
+        gap: 8px;
+      }
+      
+      .control-btn {
+        width: 55px;
+        height: 55px;
+        font-size: 0.6rem;
+      }
+      
+      .control-btn .icon {
+        font-size: 1.1rem;
+      }
+      
+      #minimapContainer {
+        width: 110px;
+        height: 110px;
+      }
+      
+      #minimap {
+        width: 110px;
+        height: 110px;
+      }
+      
+      #leaderboard {
+        font-size: 0.7rem;
+        padding: 10px 12px;
+        min-width: 130px;
+      }
+      
+      #startScreen h1 {
+        font-size: 2.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Start Screen -->
+  <div id="startScreen">
+    <h1>VOID ARENA</h1>
+    <input type="text" id="nameInput" placeholder="Enter your name" maxlength="15">
+    <div class="color-picker">
+      <div class="color-option selected" style="background: #ff00ff" data-color="#ff00ff"></div>
+      <div class="color-option" style="background: #00ffff" data-color="#00ffff"></div>
+      <div class="color-option" style="background: #ff0080" data-color="#ff0080"></div>
+      <div class="color-option" style="background: #80ff00" data-color="#80ff00"></div>
+      <div class="color-option" style="background: #ff8000" data-color="#ff8000"></div>
+      <div class="color-option" style="background: #0080ff" data-color="#0080ff"></div>
+    </div>
+    <button id="playBtn">PLAY ONLINE</button>
+    <div id="connectionStatus"></div>
+    <button id="offlineBtn">PLAY OFFLINE (Solo)</button>
+    <input type="text" id="serverInput" placeholder="ws://localhost:3000" value="ws://localhost:3000">
+  </div>
+
+  <!-- Game Canvas -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" style="display: none;">
+    <!-- Stats - Top Right -->
+    <div id="stats">
+      <div>FPS: <span id="fps">0</span></div>
+      <div>Ping: <span id="ping">0</span>ms</div>
+    </div>
+    
+    <!-- Leaderboard - Top Left -->
+    <div id="leaderboard">
+      <h3>🏆 Leaderboard</h3>
+      <div id="leaderboardList"></div>
+    </div>
+    
+    <!-- Shield Active Timer -->
+    <div id="shieldTimer">🛡️ SHIELD: <span id="shieldTimeLeft">7</span>s</div>
+    
+    <!-- Abilities - Bottom Left -->
+    <div id="abilitiesLeft">
+      <button class="ability-btn spike" id="spikeBtn">
+        <span class="icon">💥</span>
+        <span class="key">[Q]</span>
+        <div class="cooldown-overlay"></div>
+        <span class="charges" id="spikeCharges">5</span>
+      </button>
+      <button class="ability-btn shield" id="shieldBtn">
+        <span class="icon">🛡️</span>
+        <span class="key">[W]</span>
+        <div class="cooldown-overlay"></div>
+        <span class="charges" id="shieldCharges">3</span>
+      </button>
+      <button class="ability-btn freeze" id="freezeBtn">
+        <span class="icon">❄️</span>
+        <span class="key">[E]</span>
+        <div class="cooldown-overlay"></div>
+        <span class="charges" id="freezeCharges">5</span>
+      </button>
+    </div>
+    
+    <!-- Controls - Bottom Right -->
+    <div id="controlsRight">
+      <button class="control-btn" id="splitBtn">
+        <span class="icon">⚔️</span>
+        <span>SPLIT</span>
+        <span class="key-hint">[SPACE]</span>
+      </button>
+      <button class="control-btn" id="ejectBtn">
+        <span class="icon">💨</span>
+        <span>EJECT</span>
+        <span class="key-hint">[SHIFT]</span>
+      </button>
+    </div>
+    
+    <!-- Minimap -->
+    <div id="minimapContainer">
+      <canvas id="minimap"></canvas>
+    </div>
+    
+    <!-- Virtual Joystick - Bottom Left (mobile) -->
+    <div id="joystick">
+      <div id="joystickKnob"></div>
+    </div>
+  </div>
+
+  <!-- Death Screen -->
+  <div id="deathScreen">
+    <h2>CONSUMED</h2>
+    <p>Your final mass: <span id="finalMass">0</span></p>
+    <p>Respawning...</p>
+  </div>
+
+  <script>
+    // ============== GAME STATE ==============
+    const state = {
+      connected: false,
+      offlineMode: false,
+      playerId: null,
+      players: [],
+      pellets: [],
+      ejectedMass: [],
+      leaderboard: [],
+      mapSize: 5000,
+      yourMass: 20,
+      camera: { x: 0, y: 0, zoom: 1 },
+      input: { x: 0, y: 0 },
+      lastState: null,
+      prevState: null,
+      interpFactor: 0
+    };
+
+    // ============== OFFLINE GAME ENGINE ==============
+    const offlineGame = {
+      player: null,
+      bots: [],
+      pellets: [],
+      ejectedMass: [],
+      viruses: [], // Spikes that explode players
+      splitEffects: [], // Visual effects for splits
+      explosionEffects: [], // Visual effects for virus explosions
+      swallowEffects: [], // Visual effects for eating/swallowing
+      spikeProjectiles: [], // Player-thrown spikes
+      freezeProjectiles: [], // Player-thrown freeze bombs
+      frozenEntities: new Map(), // Track frozen entities and their timers
+      nextId: 1,
+      
+      // Map is now circular
+      MAP_RADIUS: 8000, // Circular map radius - DOUBLED!
+      BURN_ZONE_WIDTH: 150, // How far outside before burning starts
+      BURN_DAMAGE: 150, // Mass lost per second when burning - 3x FASTER
+      
+      PELLET_COUNT: 600,
+      BOT_COUNT: 10,
+      VIRUS_COUNT: 12, // Number of viruses/spikes on map
+      PELLET_VALUE: 10,
+      BASE_SPEED: 14, // Smoother base speed
+      SPLIT_BOOST: 3000, // Split launch - cells spread then bounce back quickly
+      MAGNETIC_STRENGTH: 0.35, // Stronger magnetic pull to bring cells back together faster
+      MAGNETIC_RANGE: 50, // Start pulling almost immediately
+      MAGNETIC_MAX_RANGE: 400, // Full pull strength at this distance
+      FRICTION: 0.96, // Lower friction - cells glide further before bouncing back
+      EJECT_MASS: 15,
+      EJECT_SPEED: 2500, // VERY fast eject - travels far
+      EJECT_RECONNECT_SPEED: 0.15, // VERY slow reconnect - smooth gentle drift back
+      VIRUS_MIN_MASS: 100, // Minimum mass to be popped by virus
+      VIRUS_FEED_COUNT: 7, // How many mass pellets to feed a virus to shoot it
+      
+      // Ability cooldowns
+      SPIKE_COOLDOWN: 1500, // 1.5 seconds
+      FREEZE_COOLDOWN: 1500, // 1.5 seconds
+      FREEZE_DURATION: 3000, // 3 seconds frozen
+      SPIKE_COST: 0, // No mass cost - uses charges
+      FREEZE_COST: 0, // No mass cost - uses charges
+      PROJECTILE_SPEED: 3200, // Very fast spit
+      PROJECTILE_STOP_DISTANCE: 8160, // Stop after this distance - 1.7x further
+      PROJECTILE_STAY_TIME: 5000, // Stay for 5 seconds
+      
+      // Ability charges
+      spikeCharges: 5,
+      freezeCharges: 5,
+      shieldCharges: 3,
+      MAX_CHARGES: 10,
+      MAX_SHIELD_CHARGES: 5,
+      
+      // Shield
+      SHIELD_DURATION: 7000, // 7 seconds
+      SHIELD_COOLDOWN: 3000, // 3 seconds between uses
+      shieldActive: false,
+      shieldEndTime: 0,
+      lastShieldTime: 0,
+      
+      // Cell border settings
+      CELL_BORDER_WIDTH: 3,
+      MIN_CELL_DISTANCE: 2, // Minimum gap between cell borders
+      
+      // Pickups on map
+      pickups: [],
+      PICKUP_COUNT: 3, // Reduced - only 3 pickups on map at a time
+      PICKUP_RESPAWN_TIME: 15000, // 15 seconds to respawn
+      
+      lastSpikeTime: 0,
+      lastFreezeTime: 0,
+      lastPickupSpawn: 0,
+      
+      NEON_COLORS: ['#ff00ff', '#00ffff', '#ff0080', '#80ff00', '#8000ff', '#ff8000', '#0080ff'],
+      BOT_NAMES: ['Nova', 'Phantom', 'Eclipse', 'Nebula', 'Vortex', 'Quantum', 'Stellar', 'Cosmic'],
+      
+      init(playerName, playerColor) {
+        this.pellets = [];
+        this.bots = [];
+        this.ejectedMass = [];
+        this.viruses = [];
+        this.splitEffects = [];
+        this.explosionEffects = [];
+        this.swallowEffects = [];
+        this.spikeProjectiles = [];
+        this.freezeProjectiles = [];
+        this.pickups = [];
+        this.frozenEntities = new Map();
+        this.lastSpikeTime = 0;
+        this.lastFreezeTime = 0;
+        this.lastShieldTime = 0;
+        this.lastPickupSpawn = Date.now() - 10000; // Allow first pickup to spawn soon
+        this.spikeCharges = 5;
+        this.freezeCharges = 5;
+        this.shieldCharges = 3;
+        this.shieldActive = false;
+        this.shieldEndTime = 0;
+        
+        // Start with just 1 pickup on the map
+        this.spawnPickup();
+        
+        // Update map size for circular map
+        state.mapSize = this.MAP_RADIUS * 2;
+        
+        // Spawn pellets
+        for (let i = 0; i < this.PELLET_COUNT; i++) {
+          this.spawnPellet();
+        }
+        
+        // Spawn viruses
+        for (let i = 0; i < this.VIRUS_COUNT; i++) {
+          this.spawnVirus();
+        }
+        
+        // Create player
+        const spawn = this.getRandomSpawn();
+        this.player = {
+          id: this.nextId++,
+          name: playerName,
+          color: playerColor,
+          cells: [{
+            x: spawn.x,
+            y: spawn.y,
+            mass: 20,
+            vx: 0,
+            vy: 0,
+            mergeTime: 0
+          }],
+          inputX: 0,
+          inputY: 0,
+          isBot: false
+        };
+        
+        // Create bots
+        for (let i = 0; i < this.BOT_COUNT; i++) {
+          this.spawnBot();
+        }
+        
+        state.playerId = this.player.id;
+      },
+      
+      // Spawn pellet within circular map
+      spawnPellet() {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = Math.random() * this.MAP_RADIUS * 0.95;
+        this.pellets.push({
+          id: this.nextId++,
+          x: Math.cos(angle) * radius,
+          y: Math.sin(angle) * radius,
+          color: this.NEON_COLORS[Math.floor(Math.random() * this.NEON_COLORS.length)]
+        });
+      },
+      
+      spawnVirus(x, y) {
+        // If no position given, spawn randomly within circle
+        if (x === undefined) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = Math.random() * this.MAP_RADIUS * 0.85;
+          x = Math.cos(angle) * radius;
+          y = Math.sin(angle) * radius;
+        }
+        this.viruses.push({
+          id: this.nextId++,
+          x: x,
+          y: y,
+          mass: 100,
+          fedCount: 0,
+          pulsePhase: Math.random() * Math.PI * 2
+        });
+      },
+      
+      spawnBot() {
+        const spawn = this.getRandomSpawn();
+        this.bots.push({
+          id: this.nextId++,
+          name: this.BOT_NAMES[Math.floor(Math.random() * this.BOT_NAMES.length)],
+          color: this.NEON_COLORS[Math.floor(Math.random() * this.NEON_COLORS.length)],
+          cells: [{
+            x: spawn.x,
+            y: spawn.y,
+            mass: 15 + Math.random() * 30,
+            vx: 0,
+            vy: 0,
+            mergeTime: 0
+          }],
+          inputX: 0,
+          inputY: 0,
+          isBot: true,
+          targetX: spawn.x,
+          targetY: spawn.y,
+          thinkTimer: 0
+        });
+      },
+      
+      getRandomSpawn() {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = Math.random() * this.MAP_RADIUS * 0.7;
+        return {
+          x: Math.cos(angle) * radius,
+          y: Math.sin(angle) * radius
+        };
+      },
+      
+      // Spawn ability pickup on map
+      spawnPickup() {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = Math.random() * this.MAP_RADIUS * 0.85;
+        const rand = Math.random();
+        let type;
+        if (rand < 0.4) type = 'spike';
+        else if (rand < 0.8) type = 'freeze';
+        else type = 'shield';
+        
+        this.pickups.push({
+          id: this.nextId++,
+          x: Math.cos(angle) * radius,
+          y: Math.sin(angle) * radius,
+          type: type, // 'spike', 'freeze', or 'shield'
+          pulsePhase: Math.random() * Math.PI * 2,
+          createdAt: Date.now()
+        });
+      },
+      
+      // Activate shield
+      activateShield() {
+        const now = Date.now();
+        if (now - this.lastShieldTime < this.SHIELD_COOLDOWN) return false;
+        if (this.shieldCharges <= 0) return false;
+        if (this.shieldActive) return false;
+        
+        this.shieldCharges--;
+        this.shieldActive = true;
+        this.shieldEndTime = now + this.SHIELD_DURATION;
+        this.lastShieldTime = now;
+        
+        return true;
+      },
+      
+      // Get max cells based on mass
+      getMaxCells(mass) {
+        if (mass >= 10000) return 16;
+        if (mass >= 5000) return 12;
+        if (mass >= 3000) return 8;
+        return 4;
+      },
+      
+      // Check if position is outside the circular boundary
+      getDistanceFromCenter(x, y) {
+        return Math.sqrt(x * x + y * y);
+      },
+      
+      // Apply burn damage to entities outside the circle
+      applyBurnDamage(entity, dt) {
+        for (const cell of entity.cells) {
+          const dist = this.getDistanceFromCenter(cell.x, cell.y);
+          if (dist > this.MAP_RADIUS) {
+            const burnIntensity = Math.min(1, (dist - this.MAP_RADIUS) / this.BURN_ZONE_WIDTH);
+            const damage = this.BURN_DAMAGE * burnIntensity * dt;
+            cell.mass = Math.max(5, cell.mass - damage);
+            
+            // Push back toward center
+            const pushStrength = 5 * burnIntensity;
+            const angle = Math.atan2(cell.y, cell.x);
+            cell.x -= Math.cos(angle) * pushStrength;
+            cell.y -= Math.sin(angle) * pushStrength;
+          }
+        }
+      },
+      
+      // Throw spike projectile from FRONT cell
+      throwSpike(entity) {
+        const now = Date.now();
+        if (now - this.lastSpikeTime < this.SPIKE_COOLDOWN) return false;
+        
+        // Check if we have charges
+        if (this.spikeCharges <= 0) return false;
+        
+        this.spikeCharges--;
+        
+        const angle = Math.atan2(entity.inputY || 0.001, entity.inputX || 0.001);
+        const frontCell = this.getFrontCell(entity);
+        const frontRadius = this.massToRadius(frontCell.mass);
+        
+        const startX = frontCell.x + Math.cos(angle) * (frontRadius + 20);
+        const startY = frontCell.y + Math.sin(angle) * (frontRadius + 20);
+        
+        this.spikeProjectiles.push({
+          id: this.nextId++,
+          x: startX,
+          y: startY,
+          startX: startX,
+          startY: startY,
+          vx: Math.cos(angle) * this.PROJECTILE_SPEED,
+          vy: Math.sin(angle) * this.PROJECTILE_SPEED,
+          ownerId: entity.id,
+          color: '#ff4444',
+          createdAt: now,
+          stoppedAt: 0, // When it stopped moving
+          stopped: false,
+          mass: 30
+        });
+        
+        this.lastSpikeTime = now;
+        return true;
+      },
+      
+      // Throw freeze projectile from FRONT cell
+      throwFreeze(entity) {
+        const now = Date.now();
+        if (now - this.lastFreezeTime < this.FREEZE_COOLDOWN) return false;
+        
+        // Check if we have charges
+        if (this.freezeCharges <= 0) return false;
+        
+        this.freezeCharges--;
+        
+        const angle = Math.atan2(entity.inputY || 0.001, entity.inputX || 0.001);
+        const frontCell = this.getFrontCell(entity);
+        const frontRadius = this.massToRadius(frontCell.mass);
+        
+        const startX = frontCell.x + Math.cos(angle) * (frontRadius + 20);
+        const startY = frontCell.y + Math.sin(angle) * (frontRadius + 20);
+        
+        this.freezeProjectiles.push({
+          id: this.nextId++,
+          x: startX,
+          y: startY,
+          startX: startX,
+          startY: startY,
+          vx: Math.cos(angle) * this.PROJECTILE_SPEED,
+          vy: Math.sin(angle) * this.PROJECTILE_SPEED,
+          ownerId: entity.id,
+          color: '#44aaff',
+          createdAt: now,
+          stoppedAt: 0,
+          stopped: false,
+          pulsePhase: 0
+        });
+        
+        this.lastFreezeTime = now;
+        return true;
+      },
+      
+      massToRadius(mass) {
+        return Math.sqrt(mass) * 4;
+      },
+      
+      getSpeed(mass) {
+        // DRAMATIC speed differences - small cells zoom ahead, big cells crawl
+        // Each cell moves completely independently based on its own mass
+        
+        if (mass >= 10000) {
+          return this.BASE_SPEED * 0.28; // Massive cells are VERY slow
+        } else if (mass >= 5000) {
+          const t = (mass - 5000) / 5000;
+          return this.BASE_SPEED * (0.38 - t * 0.1);
+        } else if (mass >= 3000) {
+          const t = (mass - 3000) / 2000;
+          return this.BASE_SPEED * (0.48 - t * 0.1);
+        } else if (mass >= 1500) {
+          const t = (mass - 1500) / 1500;
+          return this.BASE_SPEED * (0.58 - t * 0.1);
+        } else if (mass >= 500) {
+          const t = (mass - 500) / 1000;
+          return this.BASE_SPEED * (0.72 - t * 0.14);
+        } else if (mass >= 200) {
+          const t = (mass - 200) / 300;
+          return this.BASE_SPEED * (0.85 - t * 0.13);
+        } else if (mass >= 100) {
+          const t = (mass - 100) / 100;
+          return this.BASE_SPEED * (0.95 - t * 0.1);
+        } else if (mass >= 50) {
+          // Small cells - noticeably faster
+          const t = (mass - 50) / 50;
+          return this.BASE_SPEED * (1.08 - t * 0.13);
+        } else if (mass >= 25) {
+          // Very small cells - fast but controlled
+          const t = (mass - 25) / 25;
+          return this.BASE_SPEED * (1.18 - t * 0.1);
+        } else {
+          // Tiny cells zoom ahead
+          return this.BASE_SPEED * 1.22;
+        }
+      },
+      
+      // Get the front-most cell (closest to input direction)
+      getFrontCell(entity) {
+        if (entity.cells.length === 1) return entity.cells[0];
+        
+        const center = this.getCenter(entity);
+        const inputAngle = Math.atan2(entity.inputY || 0.001, entity.inputX || 0.001);
+        
+        let frontCell = entity.cells[0];
+        let bestScore = -Infinity;
+        
+        for (const cell of entity.cells) {
+          // Calculate how "in front" this cell is
+          const dx = cell.x - center.x;
+          const dy = cell.y - center.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist > 1) {
+            const cellAngle = Math.atan2(dy, dx);
+            let angleDiff = Math.abs(cellAngle - inputAngle);
+            if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+            
+            // Score based on being in the right direction AND being far from center
+            const directionScore = 1 - (angleDiff / Math.PI); // 1 = same direction, 0 = opposite
+            const distanceScore = dist / 200; // Bonus for being further out
+            const score = directionScore * 2 + distanceScore;
+            
+            if (score > bestScore) {
+              bestScore = score;
+              frontCell = cell;
+            }
+          }
+        }
+        
+        return frontCell;
+      },
+      
+      distance(x1, y1, x2, y2) {
+        return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+      },
+      
+      getTotalMass(entity) {
+        return entity.cells.reduce((sum, c) => sum + c.mass, 0);
+      },
+      
+      updateBot(bot, dt) {
+        bot.thinkTimer -= dt;
+        if (bot.thinkTimer <= 0) {
+          bot.thinkTimer = 1 + Math.random() * 2;
+          
+          // Find nearest pellet or smaller player
+          let bestTarget = null;
+          let bestDist = Infinity;
+          
+          const botCenter = this.getCenter(bot);
+          const botMass = this.getTotalMass(bot);
+          
+          // Look for pellets
+          for (const pellet of this.pellets) {
+            const dist = this.distance(botCenter.x, botCenter.y, pellet.x, pellet.y);
+            if (dist < bestDist) {
+              bestDist = dist;
+              bestTarget = { x: pellet.x, y: pellet.y };
+            }
+          }
+          
+          // Look for smaller players to chase
+          const playerMass = this.getTotalMass(this.player);
+          if (botMass > playerMass * 1.2) {
+            const playerCenter = this.getCenter(this.player);
+            const dist = this.distance(botCenter.x, botCenter.y, playerCenter.x, playerCenter.y);
+            if (dist < 500) {
+              bestTarget = { x: playerCenter.x, y: playerCenter.y };
+            }
+          }
+          
+          // Run from bigger players
+          if (playerMass > botMass * 1.2) {
+            const playerCenter = this.getCenter(this.player);
+            const dist = this.distance(botCenter.x, botCenter.y, playerCenter.x, playerCenter.y);
+            if (dist < 400) {
+              bestTarget = { 
+                x: botCenter.x - (playerCenter.x - botCenter.x),
+                y: botCenter.y - (playerCenter.y - botCenter.y)
+              };
+            }
+          }
+          
+          if (bestTarget) {
+            bot.targetX = bestTarget.x;
+            bot.targetY = bestTarget.y;
+          } else {
+            bot.targetX = Math.random() * state.mapSize - state.mapSize / 2;
+            bot.targetY = Math.random() * state.mapSize - state.mapSize / 2;
+          }
+        }
+        
+        const botCenter = this.getCenter(bot);
+        const dx = bot.targetX - botCenter.x;
+        const dy = bot.targetY - botCenter.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist > 10) {
+          bot.inputX = dx / dist;
+          bot.inputY = dy / dist;
+        } else {
+          bot.inputX = 0;
+          bot.inputY = 0;
+        }
+      },
+      
+      getCenter(entity) {
+        let cx = 0, cy = 0, totalMass = 0;
+        for (const cell of entity.cells) {
+          cx += cell.x * cell.mass;
+          cy += cell.y * cell.mass;
+          totalMass += cell.mass;
+        }
+        return totalMass > 0 ? { x: cx / totalMass, y: cy / totalMass } : { x: 0, y: 0 };
+      },
+      
+      updateEntity(entity, dt) {
+        // Check if entity is frozen
+        const frozenUntil = this.frozenEntities.get(entity.id);
+        const isFrozen = frozenUntil && Date.now() < frozenUntil;
+        
+        const center = this.getCenter(entity);
+        
+        for (const cell of entity.cells) {
+          // Initialize velocity if not present
+          if (cell.vx === undefined) cell.vx = 0;
+          if (cell.vy === undefined) cell.vy = 0;
+          
+          if (!isFrozen) {
+            // Each cell moves at its OWN speed based on its OWN mass
+            const speed = this.getSpeed(cell.mass);
+            
+            // Get input magnitude for fluid control
+            const inputMag = Math.sqrt(entity.inputX ** 2 + entity.inputY ** 2);
+            const targetVx = entity.inputX * speed;
+            const targetVy = entity.inputY * speed;
+            
+            // INDEPENDENT MOVEMENT PER CELL
+            // Small cells: fast acceleration, responsive, zoom ahead
+            // Big cells: slow acceleration, sluggish, lag behind
+            const massInertia = Math.min(1, 35 / cell.mass); // Small cells: ~1, big cells: very low
+            const baseAccel = 0.08 + massInertia * 0.22; // 0.08 (big) to 0.30 (small)
+            
+            // Faster response when changing direction
+            const currentAngle = Math.atan2(cell.vy, cell.vx);
+            const targetAngle = Math.atan2(entity.inputY, entity.inputX);
+            let angleDiff = Math.abs(targetAngle - currentAngle);
+            if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+            const directionFactor = 1 + (angleDiff / Math.PI) * 0.4;
+            
+            const accel = baseAccel * directionFactor * (inputMag > 0.1 ? 1 : 0.5);
+            
+            cell.vx += (targetVx - cell.vx) * accel;
+            cell.vy += (targetVy - cell.vy) * accel;
+            
+            // Store direction for visual indicator
+            if (inputMag > 0.1) {
+              cell.dirAngle = targetAngle;
+              cell.dirStrength = inputMag;
+            } else {
+              cell.dirStrength = (cell.dirStrength || 0) * 0.9;
+            }
+          } else {
+            // Frozen - rapid deceleration
+            cell.vx *= 0.85;
+            cell.vy *= 0.85;
+            cell.dirStrength = 0;
+          }
+          
+          // Apply split/boost velocity with friction
+          if (cell.boostVx !== undefined && (Math.abs(cell.boostVx) > 0.1 || Math.abs(cell.boostVy) > 0.1)) {
+            cell.x += cell.boostVx * dt;
+            cell.y += cell.boostVy * dt;
+            cell.boostVx *= this.FRICTION;
+            cell.boostVy *= this.FRICTION;
+            
+            // Clear boost when negligible
+            if (Math.abs(cell.boostVx) < 0.5 && Math.abs(cell.boostVy) < 0.5) {
+              cell.boostVx = 0;
+              cell.boostVy = 0;
+            }
+          }
+          
+          // SMOOTH MAGNETIC ATTRACTION - cells always gently pull back together
+          // Like a rubber band - stronger the further they stretch
+          if (entity.cells.length > 1) {
+            const dx = center.x - cell.x;
+            const dy = center.y - cell.y;
+            const distToCenter = Math.sqrt(dx * dx + dy * dy);
+            
+            // Always apply some pull, but it gets stronger with distance
+            if (distToCenter > this.MAGNETIC_RANGE) {
+              // Calculate how stretched the "rubber band" is
+              const stretch = distToCenter - this.MAGNETIC_RANGE;
+              const maxStretch = this.MAGNETIC_MAX_RANGE - this.MAGNETIC_RANGE;
+              
+              // Pull intensity increases smoothly with distance (quadratic for bouncy feel)
+              const stretchRatio = Math.min(1, stretch / maxStretch);
+              const pullIntensity = stretchRatio * stretchRatio; // Quadratic - gentle close, strong far
+              
+              // Reduce pull when boosting (after split) but not as much
+              const boostMag = Math.sqrt((cell.boostVx || 0) ** 2 + (cell.boostVy || 0) ** 2);
+              const boostFactor = Math.max(0.3, 1 - boostMag / 500);
+              
+              // All cells feel the pull equally
+              const attractStrength = this.MAGNETIC_STRENGTH * pullIntensity * boostFactor;
+              
+              // Apply stronger acceleration toward center
+              const pullForce = attractStrength * 4;
+              cell.vx += (dx / distToCenter) * pullForce;
+              cell.vy += (dy / distToCenter) * pullForce;
+              
+              // At extreme distances, apply stronger emergency pull
+              if (distToCenter > this.MAGNETIC_MAX_RANGE) {
+                const emergencyPull = (distToCenter - this.MAGNETIC_MAX_RANGE) * 0.03;
+                cell.vx += (dx / distToCenter) * emergencyPull;
+                cell.vy += (dy / distToCenter) * emergencyPull;
+              }
+              
+              // Always apply a minimum pull to keep cells drifting together
+              const minPull = 0.08;
+              cell.vx += (dx / distToCenter) * minPull;
+              cell.vy += (dy / distToCenter) * minPull;
+            }
+          }
+          
+          // Apply velocity
+          cell.x += cell.vx;
+          cell.y += cell.vy;
+          
+          // CIRCULAR boundary - PERMEABLE (you CAN go outside, but you burn)
+          const cellRadius = this.massToRadius(cell.mass);
+          const distFromCenter = this.getDistanceFromCenter(cell.x, cell.y);
+          
+          // Only apply very slight resistance at the edge (not blocking)
+          if (distFromCenter > this.MAP_RADIUS) {
+            const overshoot = distFromCenter - this.MAP_RADIUS;
+            const resistance = Math.min(0.1, overshoot / 500); // Gentle resistance
+            
+            const angle = Math.atan2(cell.y, cell.x);
+            cell.vx -= Math.cos(angle) * resistance * Math.abs(cell.vx);
+            cell.vy -= Math.sin(angle) * resistance * Math.abs(cell.vy);
+          }
+          
+          // Hard limit at extreme distance
+          const maxDist = this.MAP_RADIUS + this.BURN_ZONE_WIDTH * 2;
+          if (distFromCenter > maxDist) {
+            const angle = Math.atan2(cell.y, cell.x);
+            cell.x = Math.cos(angle) * maxDist;
+            cell.y = Math.sin(angle) * maxDist;
+          }
+          
+          // Merge timer
+          if (cell.mergeTime > 0) cell.mergeTime -= dt * 1000;
+          
+          // Decay merge glow effect
+          if (cell.mergeGlow > 0) {
+            cell.mergeGlow -= dt * 2;
+            if (cell.mergeGlow < 0) cell.mergeGlow = 0;
+          }
+        }
+        
+        // Apply burn damage if outside circle
+        this.applyBurnDamage(entity, dt);
+        
+        // Cell-to-cell interactions - STRICT NO OVERLAP (only touch borders)
+        for (let i = 0; i < entity.cells.length; i++) {
+          for (let j = i + 1; j < entity.cells.length; j++) {
+            const c1 = entity.cells[i];
+            const c2 = entity.cells[j];
+            const r1 = this.massToRadius(c1.mass);
+            const r2 = this.massToRadius(c2.mass);
+            const dist = this.distance(c1.x, c1.y, c2.x, c2.y);
+            const minDist = r1 + r2 + this.MIN_CELL_DISTANCE; // Cells can only TOUCH borders
+            
+            if (dist < minDist) {
+              // Both cells must have their OWN merge timer expired to merge
+              if (c1.mergeTime <= 0 && c2.mergeTime <= 0) {
+                // SMOOTH merge animation - cells blend into each other
+                const newMass = c1.mass + c2.mass;
+                
+                // Weighted position blend
+                const weight1 = c1.mass / newMass;
+                const weight2 = c2.mass / newMass;
+                const newX = c1.x * weight1 + c2.x * weight2;
+                const newY = c1.y * weight1 + c2.y * weight2;
+                
+                // Smooth transition - don't jump, ease into new position
+                c1.mass = newMass;
+                c1.x = c1.x + (newX - c1.x) * 0.5;
+                c1.y = c1.y + (newY - c1.y) * 0.5;
+                c1.vx = c1.vx * weight1 + c2.vx * weight2;
+                c1.vy = c1.vy * weight1 + c2.vy * weight2;
+                
+                // Mark as merging for visual effect
+                c1.justMerged = true;
+                c1.mergeGlow = 1.0;
+                
+                entity.cells.splice(j, 1);
+                j--;
+              } else {
+                // SMOOTH push apart - cells slide around each other
+                const overlap = minDist - dist;
+                if (overlap > 0 && dist > 0.1) {
+                  const angle = Math.atan2(c2.y - c1.y, c2.x - c1.x);
+                  
+                  // Smooth push - gradual correction not instant
+                  const pushForce = overlap * 0.35 + 0.3;
+                  
+                  // Push proportional to inverse mass (lighter cells move more and can slide past)
+                  const totalMass = c1.mass + c2.mass;
+                  const push1 = c2.mass / totalMass;
+                  const push2 = c1.mass / totalMass;
+                  
+                  // Apply push smoothly
+                  c1.x -= Math.cos(angle) * pushForce * push1;
+                  c1.y -= Math.sin(angle) * pushForce * push1;
+                  c2.x += Math.cos(angle) * pushForce * push2;
+                  c2.y += Math.sin(angle) * pushForce * push2;
+                  
+                  // Gentle velocity damping - allow sliding
+                  const relVelX = c2.vx - c1.vx;
+                  const relVelY = c2.vy - c1.vy;
+                  const velDot = relVelX * Math.cos(angle) + relVelY * Math.sin(angle);
+                  
+                  if (velDot < 0) { // Moving toward each other
+                    // Soft damping allows cells to slide around
+                    c1.vx += Math.cos(angle) * velDot * 0.15 * push1;
+                    c1.vy += Math.sin(angle) * velDot * 0.15 * push1;
+                    c2.vx -= Math.cos(angle) * velDot * 0.15 * push2;
+                    c2.vy -= Math.sin(angle) * velDot * 0.15 * push2;
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      
+      checkPelletCollisions(entity) {
+        for (const cell of entity.cells) {
+          const radius = this.massToRadius(cell.mass);
+          
+          for (let i = this.pellets.length - 1; i >= 0; i--) {
+            const pellet = this.pellets[i];
+            const dist = this.distance(cell.x, cell.y, pellet.x, pellet.y);
+            
+            if (dist < radius) {
+              cell.mass += this.PELLET_VALUE;
+              this.pellets.splice(i, 1);
+              this.spawnPellet();
+            }
+          }
+        }
+      },
+      
+      checkPlayerCollisions(e1, e2) {
+        // Check if either player has shield active
+        const e1Shielded = e1.id === this.player.id && this.shieldActive;
+        const e2Shielded = e2.id === this.player.id && this.shieldActive;
+        
+        // Check if either player is frozen - frozen players can't be eaten!
+        const e1Frozen = this.frozenEntities.has(e1.id) && Date.now() < this.frozenEntities.get(e1.id);
+        const e2Frozen = this.frozenEntities.has(e2.id) && Date.now() < this.frozenEntities.get(e2.id);
+        
+        for (let i = e1.cells.length - 1; i >= 0; i--) {
+          for (let j = e2.cells.length - 1; j >= 0; j--) {
+            const c1 = e1.cells[i];
+            const c2 = e2.cells[j];
+            if (!c1 || !c2) continue;
+            
+            const r1 = this.massToRadius(c1.mass);
+            const r2 = this.massToRadius(c2.mass);
+            const dist = this.distance(c1.x, c1.y, c2.x, c2.y);
+            const minDist = r1 + r2;
+            
+            // If either player has shield, PUSH them apart instead of eating
+            if (e1Shielded || e2Shielded) {
+              if (dist < minDist) {
+                const overlap = minDist - dist;
+                const angle = Math.atan2(c2.y - c1.y, c2.x - c1.x);
+                
+                // Strong push force
+                const pushForce = overlap * 0.8 + 5;
+                
+                if (e1Shielded) {
+                  // Shielded player pushes the other away
+                  c2.x += Math.cos(angle) * pushForce;
+                  c2.y += Math.sin(angle) * pushForce;
+                  c2.vx = (c2.vx || 0) + Math.cos(angle) * pushForce * 2;
+                  c2.vy = (c2.vy || 0) + Math.sin(angle) * pushForce * 2;
+                } else {
+                  // Other player has shield, push e1 away
+                  c1.x -= Math.cos(angle) * pushForce;
+                  c1.y -= Math.sin(angle) * pushForce;
+                  c1.vx = (c1.vx || 0) - Math.cos(angle) * pushForce * 2;
+                  c1.vy = (c1.vy || 0) - Math.sin(angle) * pushForce * 2;
+                }
+              }
+              continue; // No eating when shield is active
+            }
+            
+            // Normal eating logic (no shield)
+            // Frozen entities CANNOT be eaten - but they also can't eat others
+            if (e1Frozen || e2Frozen) {
+              // Push apart if overlapping
+              if (dist < minDist) {
+                const overlap = minDist - dist;
+                const angle = Math.atan2(c2.y - c1.y, c2.x - c1.x);
+                const pushForce = overlap * 0.5 + 2;
+                
+                c1.x -= Math.cos(angle) * pushForce * 0.5;
+                c1.y -= Math.sin(angle) * pushForce * 0.5;
+                c2.x += Math.cos(angle) * pushForce * 0.5;
+                c2.y += Math.sin(angle) * pushForce * 0.5;
+              }
+              continue; // No eating when someone is frozen
+            }
+            
+            if (c1.mass > c2.mass * 1.15 && dist < r1 - r2 * 0.2) {
+              c1.mass += c2.mass;
+              e2.cells.splice(j, 1);
+              return e2;
+            } else if (c2.mass > c1.mass * 1.15 && dist < r2 - r1 * 0.2) {
+              c2.mass += c1.mass;
+              e1.cells.splice(i, 1);
+              return e1;
+            }
+          }
+        }
+        return null;
+      },
+      
+      // Check if entity hits a virus and explode them
+      checkVirusCollisions(entity) {
+        for (const cell of entity.cells) {
+          if (cell.mass < this.VIRUS_MIN_MASS) continue; // Too small to be affected
+          
+          const cellRadius = this.massToRadius(cell.mass);
+          
+          for (let i = this.viruses.length - 1; i >= 0; i--) {
+            const virus = this.viruses[i];
+            const virusRadius = this.massToRadius(virus.mass);
+            const dist = this.distance(cell.x, cell.y, virus.x, virus.y);
+            
+            // Cell must overlap virus significantly
+            if (dist < cellRadius - virusRadius * 0.3) {
+              // EXPLODE THE CELL!
+              this.explodeCell(entity, cell, virus);
+              
+              // Remove this virus and spawn a new one elsewhere
+              this.viruses.splice(i, 1);
+              setTimeout(() => this.spawnVirus(), 5000);
+              
+              return true;
+            }
+          }
+        }
+        return false;
+      },
+      
+      // Explode a cell into many pieces
+      explodeCell(entity, cell, virus) {
+        const totalMass = this.getTotalMass(entity);
+        const maxCells = this.getMaxCells(totalMass); // Dynamic based on mass
+        const currentCellCount = entity.cells.length;
+        const cellIndex = entity.cells.indexOf(cell);
+        
+        if (cellIndex === -1) return;
+        
+        // Calculate how many pieces to split into
+        const piecesCount = Math.min(maxCells - currentCellCount + 1, Math.floor(cell.mass / 20));
+        if (piecesCount <= 1) return;
+        
+        const massPerPiece = cell.mass / piecesCount;
+        
+        // Check if entity was frozen - freeze persists through explosion!
+        const wasFrozen = this.frozenEntities.has(entity.id);
+        const freezeUntil = wasFrozen ? this.frozenEntities.get(entity.id) : 0;
+        
+        // Add explosion visual effect
+        this.explosionEffects.push({
+          x: cell.x,
+          y: cell.y,
+          radius: this.massToRadius(cell.mass),
+          life: 1,
+          color: wasFrozen ? '#44aaff' : entity.color
+        });
+        
+        // Remove the original cell
+        entity.cells.splice(cellIndex, 1);
+        
+        // Create explosion pieces shooting outward
+        for (let i = 0; i < piecesCount; i++) {
+          const angle = (Math.PI * 2 * i) / piecesCount + Math.random() * 0.3;
+          const speed = 400 + Math.random() * 400;
+          
+          entity.cells.push({
+            x: cell.x + Math.cos(angle) * 20,
+            y: cell.y + Math.sin(angle) * 20,
+            mass: massPerPiece,
+            vx: 0,
+            vy: 0,
+            boostVx: Math.cos(angle) * speed,
+            boostVy: Math.sin(angle) * speed,
+            mergeTime: 12000 // 12 seconds before can merge (longer for explosion)
+          });
+        }
+        
+        // If entity was frozen, keep them frozen! Freeze doesn't break on split
+        if (wasFrozen && freezeUntil > Date.now()) {
+          this.frozenEntities.set(entity.id, freezeUntil);
+        }
+      },
+      
+      // Handle ejecting mass - from ALL cells that have enough mass (minimum 50)
+      handleEject(entity) {
+        // Calculate eject direction
+        let angle;
+        if (Math.abs(entity.inputX) > 0.1 || Math.abs(entity.inputY) > 0.1) {
+          angle = Math.atan2(entity.inputY, entity.inputX);
+        } else {
+          angle = Math.random() * Math.PI * 2;
+        }
+        
+        // Eject from ALL cells that have enough mass (minimum 50)
+        for (const cell of entity.cells) {
+          // Only eject if cell has at least 50 mass
+          if (cell.mass < 50) continue;
+          
+          cell.mass -= this.EJECT_MASS;
+          
+          const radius = this.massToRadius(cell.mass);
+          
+          this.ejectedMass.push({
+            id: this.nextId++,
+            x: cell.x + Math.cos(angle) * (radius + 15),
+            y: cell.y + Math.sin(angle) * (radius + 15),
+            mass: this.EJECT_MASS,
+            vx: Math.cos(angle) * this.EJECT_SPEED,
+            vy: Math.sin(angle) * this.EJECT_SPEED,
+            color: entity.color,
+            ownerId: entity.id,
+            createdAt: Date.now()
+          });
+        }
+      },
+      
+      // Update ejected mass movement - now slowly reconnects to owner
+      updateEjectedMass(dt) {
+        for (let i = this.ejectedMass.length - 1; i >= 0; i--) {
+          const em = this.ejectedMass[i];
+          const age = Date.now() - em.createdAt;
+          
+          // Apply velocity with friction
+          em.x += em.vx * dt;
+          em.y += em.vy * dt;
+          em.vx *= 0.92;
+          em.vy *= 0.92;
+          
+          // After a LONG delay, VERY slowly drift back toward owner
+          if (age > 5000) { // Wait 5 seconds before starting to return
+            const owner = em.ownerId === this.player.id ? this.player : 
+                          this.bots.find(b => b.id === em.ownerId);
+            
+            if (owner && owner.cells.length > 0) {
+              const center = this.getCenter(owner);
+              const dx = center.x - em.x;
+              const dy = center.y - em.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              
+              if (dist > 150) { // Only pull if far enough
+                // EXTREMELY slow magnetic pull back - very gentle drift
+                const ageFactor = Math.min(1, (age - 5000) / 25000); // Ramp up over 25 seconds
+                const pullStrength = this.EJECT_RECONNECT_SPEED * ageFactor * 0.3;
+                
+                // Very gentle acceleration toward owner
+                em.vx += (dx / dist) * pullStrength;
+                em.vy += (dy / dist) * pullStrength;
+                
+                // Cap reconnect speed so it doesn't snap back - very slow max
+                const speed = Math.sqrt(em.vx * em.vx + em.vy * em.vy);
+                const maxSpeed = 40 + ageFactor * 60; // Very slowly increase max speed
+                if (speed > maxSpeed) {
+                  em.vx = (em.vx / speed) * maxSpeed;
+                  em.vy = (em.vy / speed) * maxSpeed;
+                }
+              }
+            }
+          }
+          
+          // Circular boundary
+          const distFromCenter = this.getDistanceFromCenter(em.x, em.y);
+          if (distFromCenter > this.MAP_RADIUS) {
+            const angle = Math.atan2(em.y, em.x);
+            em.x = Math.cos(angle) * this.MAP_RADIUS * 0.99;
+            em.y = Math.sin(angle) * this.MAP_RADIUS * 0.99;
+          }
+          
+          // Check if ejected mass hits a virus
+          for (let j = this.viruses.length - 1; j >= 0; j--) {
+            const virus = this.viruses[j];
+            const virusRadius = this.massToRadius(virus.mass);
+            const dist = this.distance(em.x, em.y, virus.x, virus.y);
+            
+            if (dist < virusRadius + 10) {
+              virus.fedCount++;
+              virus.mass += em.mass * 0.5;
+              this.ejectedMass.splice(i, 1);
+              
+              if (virus.fedCount >= this.VIRUS_FEED_COUNT) {
+                const shootAngle = Math.atan2(em.vy, em.vx);
+                
+                virus.fedCount = 0;
+                virus.mass = 100;
+                
+                this.viruses.push({
+                  id: this.nextId++,
+                  x: virus.x,
+                  y: virus.y,
+                  mass: 100,
+                  fedCount: 0,
+                  pulsePhase: Math.random() * Math.PI * 2,
+                  vx: Math.cos(shootAngle) * 300,
+                  vy: Math.sin(shootAngle) * 300
+                });
+                
+                this.splitEffects.push({
+                  x: virus.x,
+                  y: virus.y,
+                  angle: shootAngle,
+                  life: 1,
+                  color: '#00ff00',
+                  radius: virusRadius
+                });
+              }
+              break;
+            }
+          }
+        }
+        
+        // Update moving viruses
+        for (const virus of this.viruses) {
+          if (virus.vx !== undefined) {
+            virus.x += virus.vx * dt;
+            virus.y += virus.vy * dt;
+            virus.vx *= 0.95;
+            virus.vy *= 0.95;
+            
+            if (Math.abs(virus.vx) < 1) virus.vx = 0;
+            if (Math.abs(virus.vy) < 1) virus.vy = 0;
+          }
+          
+          virus.pulsePhase += dt * 3;
+        }
+      },
+      
+      // Update spike projectiles
+      updateSpikeProjectiles(dt) {
+        const now = Date.now();
+        
+        for (let i = this.spikeProjectiles.length - 1; i >= 0; i--) {
+          const spike = this.spikeProjectiles[i];
+          
+          if (!spike.stopped) {
+            // Move the spike
+            spike.x += spike.vx * dt;
+            spike.y += spike.vy * dt;
+            
+            // Apply friction to slow it down (like spitting)
+            spike.vx *= 0.92;
+            spike.vy *= 0.92;
+            
+            // Check if traveled far enough or slowed down enough
+            const distTraveled = this.distance(spike.startX, spike.startY, spike.x, spike.y);
+            const speed = Math.sqrt(spike.vx ** 2 + spike.vy ** 2);
+            
+            if (distTraveled >= this.PROJECTILE_STOP_DISTANCE || speed < 50) {
+              spike.stopped = true;
+              spike.stoppedAt = now;
+              spike.vx = 0;
+              spike.vy = 0;
+            }
+          } else {
+            // Spike is stopped - check if 5 seconds have passed
+            if (now - spike.stoppedAt > this.PROJECTILE_STAY_TIME) {
+              this.spikeProjectiles.splice(i, 1);
+              continue;
+            }
+          }
+          
+          // Check hits on entities (not owner) - check whether moving or stopped
+          // Spikes COLLIDE with cells, they don't get eaten
+          const entities = [this.player, ...this.bots];
+          let hitSomething = false;
+          
+          for (const entity of entities) {
+            if (entity.id === spike.ownerId) continue;
+            
+            // Spikes can hit frozen entities too!
+            for (const cell of entity.cells) {
+              const dist = this.distance(spike.x, spike.y, cell.x, cell.y);
+              const cellRadius = this.massToRadius(cell.mass);
+              
+              // Collide at the border of the cell
+              if (dist < cellRadius + 15) {
+                // HIT! Explode this cell (even if frozen - spike breaks them apart!)
+                this.explodeCell(entity, cell, { x: spike.x, y: spike.y });
+                
+                // Add explosion effect
+                this.explosionEffects.push({
+                  x: cell.x,
+                  y: cell.y,
+                  radius: cellRadius,
+                  life: 1,
+                  color: '#ff4444'
+                });
+                hitSomething = true;
+                break;
+              }
+            }
+            if (hitSomething) break;
+          }
+          
+          if (hitSomething) {
+            this.spikeProjectiles.splice(i, 1);
+            continue;
+          }
+          
+          // Boundary check
+          if (this.getDistanceFromCenter(spike.x, spike.y) > this.MAP_RADIUS) {
+            this.spikeProjectiles.splice(i, 1);
+          }
+        }
+      },
+      
+      // Update freeze projectiles
+      updateFreezeProjectiles(dt) {
+        const now = Date.now();
+        
+        for (let i = this.freezeProjectiles.length - 1; i >= 0; i--) {
+          const freeze = this.freezeProjectiles[i];
+          
+          freeze.pulsePhase += dt * 10;
+          
+          if (!freeze.stopped) {
+            // Move the freeze
+            freeze.x += freeze.vx * dt;
+            freeze.y += freeze.vy * dt;
+            
+            // Apply friction to slow it down (like spitting)
+            freeze.vx *= 0.92;
+            freeze.vy *= 0.92;
+            
+            // Check if traveled far enough or slowed down enough
+            const distTraveled = this.distance(freeze.startX, freeze.startY, freeze.x, freeze.y);
+            const speed = Math.sqrt(freeze.vx ** 2 + freeze.vy ** 2);
+            
+            if (distTraveled >= this.PROJECTILE_STOP_DISTANCE || speed < 50) {
+              freeze.stopped = true;
+              freeze.stoppedAt = now;
+              freeze.vx = 0;
+              freeze.vy = 0;
+            }
+          } else {
+            // Freeze is stopped - check if 5 seconds have passed
+            if (now - freeze.stoppedAt > this.PROJECTILE_STAY_TIME) {
+              this.freezeProjectiles.splice(i, 1);
+              continue;
+            }
+          }
+          
+          // Check hits on ALL CELLS of entities - freeze on any cell hit
+          const entities = [this.player, ...this.bots];
+          let hitSomething = false;
+          
+          for (const entity of entities) {
+            if (entity.id === freeze.ownerId) continue;
+            
+            // Check collision with EACH cell of the entity
+            for (const cell of entity.cells) {
+              const cellRadius = this.massToRadius(cell.mass);
+              const dist = this.distance(freeze.x, freeze.y, cell.x, cell.y);
+              
+              // Collide with the cell border, don't get eaten
+              if (dist < cellRadius + 20) {
+                // FREEZE THE ENTIRE ENTITY!
+                this.frozenEntities.set(entity.id, now + this.FREEZE_DURATION);
+                
+                // Freeze effect on hit cell
+                this.explosionEffects.push({
+                  x: cell.x,
+                  y: cell.y,
+                  radius: cellRadius * 1.5,
+                  life: 1,
+                  color: '#44aaff'
+                });
+                
+                // Freeze effect on all other cells too (visual feedback)
+                for (const otherCell of entity.cells) {
+                  if (otherCell !== cell) {
+                    this.explosionEffects.push({
+                      x: otherCell.x,
+                      y: otherCell.y,
+                      radius: this.massToRadius(otherCell.mass),
+                      life: 0.7,
+                      color: '#66ccff'
+                    });
+                  }
+                }
+                
+                hitSomething = true;
+                break;
+              }
+            }
+            if (hitSomething) break;
+          }
+          
+          if (hitSomething) {
+            this.freezeProjectiles.splice(i, 1);
+            continue;
+          }
+          
+          if (this.getDistanceFromCenter(freeze.x, freeze.y) > this.MAP_RADIUS) {
+            this.freezeProjectiles.splice(i, 1);
+          }
+        }
+        
+        // Clean up expired freeze effects - DON'T remove early, freeze persists through splits
+        for (const [id, until] of this.frozenEntities) {
+          if (now >= until) {
+            this.frozenEntities.delete(id);
+          }
+        }
+      },
+      
+      // Update explosion effects
+      updateExplosionEffects(dt) {
+        for (let i = this.explosionEffects.length - 1; i >= 0; i--) {
+          this.explosionEffects[i].life -= dt * 2;
+          this.explosionEffects[i].radius += dt * 200; // Expand
+          if (this.explosionEffects[i].life <= 0) {
+            this.explosionEffects.splice(i, 1);
+          }
+        }
+      },
+      
+      // Add swallow effect when eating another player
+      addSwallowEffect(eaterCell, eatenCell, eaterColor, eatenColor) {
+        this.swallowEffects.push({
+          // Eaten cell info (shrinks and gets pulled in)
+          eatenX: eatenCell.x,
+          eatenY: eatenCell.y,
+          eatenRadius: this.massToRadius(eatenCell.mass),
+          eatenColor: eatenColor,
+          
+          // Eater cell info (target)
+          eaterX: eaterCell.x,
+          eaterY: eaterCell.y,
+          eaterRadius: this.massToRadius(eaterCell.mass),
+          eaterColor: eaterColor,
+          
+          // Animation state
+          life: 1.0,
+          rotation: 0
+        });
+      },
+      
+      // Update swallow effects
+      updateSwallowEffects(dt) {
+        for (let i = this.swallowEffects.length - 1; i >= 0; i--) {
+          const effect = this.swallowEffects[i];
+          
+          // Decrease life
+          effect.life -= dt * 2.5;
+          
+          // Shrink and move toward eater
+          const progress = 1 - effect.life;
+          effect.eatenRadius *= 0.85; // Shrink
+          effect.rotation += dt * 15; // Spiral rotation
+          
+          // Move toward eater center
+          const dx = effect.eaterX - effect.eatenX;
+          const dy = effect.eaterY - effect.eatenY;
+          effect.eatenX += dx * 0.2;
+          effect.eatenY += dy * 0.2;
+          
+          if (effect.life <= 0) {
+            this.swallowEffects.splice(i, 1);
+          }
+        }
+      },
+      
+      handleSplit(entity) {
+        const newCells = [];
+        const cellsToSplit = [...entity.cells]; // Copy to avoid modifying during iteration
+        const totalMass = this.getTotalMass(entity);
+        const maxCells = this.getMaxCells(totalMass);
+        
+        for (const cell of cellsToSplit) {
+          if (entity.cells.length + newCells.length >= maxCells) break;
+          if (cell.mass < 35) continue; // Slightly lower threshold
+          
+          const newMass = cell.mass / 2;
+          cell.mass = newMass;
+          
+          // Calculate split direction - use input or last direction
+          let angle;
+          if (Math.abs(entity.inputX) > 0.1 || Math.abs(entity.inputY) > 0.1) {
+            angle = Math.atan2(entity.inputY, entity.inputX);
+          } else if (cell.dirAngle !== undefined) {
+            angle = cell.dirAngle;
+          } else {
+            angle = Math.random() * Math.PI * 2;
+          }
+          
+          // Smooth boost - smaller cells go further but not too extreme
+          const sizeMultiplier = Math.max(0.7, 1.8 - newMass / 100);
+          const boostStrength = this.SPLIT_BOOST * sizeMultiplier;
+          
+          // Each cell gets its OWN unique merge timer (5-8 seconds based on size)
+          const baseMergeTime = 5000 + (newMass / 100) * 3000;
+          const uniqueMergeTime = baseMergeTime + Math.random() * 1000; // Slight randomness
+          
+          // Create new cell with smooth boost - starts with momentum in the direction
+          const cellRadius = this.massToRadius(cell.mass);
+          const newCell = {
+            x: cell.x + Math.cos(angle) * (cellRadius + 15),
+            y: cell.y + Math.sin(angle) * (cellRadius + 15),
+            mass: newMass,
+            vx: Math.cos(angle) * 5, // Gentle initial velocity
+            vy: Math.sin(angle) * 5,
+            boostVx: Math.cos(angle) * boostStrength,
+            boostVy: Math.sin(angle) * boostStrength,
+            mergeTime: uniqueMergeTime, // UNIQUE merge timer for this cell
+            dirAngle: angle,
+            dirStrength: 1,
+            splitId: Date.now() + Math.random() // Unique ID for tracking
+          };
+          
+          // Parent cell gets its OWN merge timer too (slightly different)
+          cell.mergeTime = uniqueMergeTime + 500;
+          cell.splitId = Date.now() + Math.random();
+          
+          // Parent gets a small backwards push for visual effect
+          cell.boostVx = (cell.boostVx || 0) - Math.cos(angle) * boostStrength * 0.08;
+          cell.boostVy = (cell.boostVy || 0) - Math.sin(angle) * boostStrength * 0.08;
+          
+          newCells.push(newCell);
+          
+          // Add smooth split effect
+          this.splitEffects.push({
+            x: cell.x,
+            y: cell.y,
+            angle: angle,
+            life: 1,
+            color: entity.color,
+            radius: this.massToRadius(newMass)
+          });
+          
+          // Add subtle burst particles
+          for (let p = 0; p < 3; p++) {
+            const pAngle = angle + (Math.random() - 0.5) * 0.5;
+            this.splitEffects.push({
+              x: cell.x + Math.cos(pAngle) * 20,
+              y: cell.y + Math.sin(pAngle) * 20,
+              angle: pAngle,
+              life: 0.5,
+              color: entity.color,
+              radius: 8
+            });
+          }
+        }
+        
+        entity.cells.push(...newCells);
+      },
+      
+      updateSplitEffects(dt) {
+        for (let i = this.splitEffects.length - 1; i >= 0; i--) {
+          this.splitEffects[i].life -= dt * 3;
+          if (this.splitEffects[i].life <= 0) {
+            this.splitEffects.splice(i, 1);
+          }
+        }
+      },
+      
+      update(dt) {
+        // Update player input with smoother response
+        this.player.inputX = state.input.x;
+        this.player.inputY = state.input.y;
+        
+        // Update effects
+        this.updateSplitEffects(dt);
+        this.updateExplosionEffects(dt);
+        this.updateEjectedMass(dt);
+        this.updateSpikeProjectiles(dt);
+        this.updateFreezeProjectiles(dt);
+        this.updatePickups();
+        
+        // Update player
+        this.updateEntity(this.player, dt);
+        this.checkPelletCollisions(this.player);
+        this.checkVirusCollisions(this.player);
+        this.checkEjectedMassCollisions(this.player);
+        this.checkPickupCollisions(this.player);
+        
+        // Update bots
+        for (let i = this.bots.length - 1; i >= 0; i--) {
+          const bot = this.bots[i];
+          this.updateBot(bot, dt);
+          this.updateEntity(bot, dt);
+          this.checkPelletCollisions(bot);
+          this.checkVirusCollisions(bot);
+          this.checkEjectedMassCollisions(bot); // Bots can eat player's ejected mass
+          
+          // Check collision with player
+          const eaten = this.checkPlayerCollisions(this.player, bot);
+          if (eaten === bot && bot.cells.length === 0) {
+            this.bots.splice(i, 1);
+            setTimeout(() => this.spawnBot(), 3000);
+          } else if (eaten === this.player && this.player.cells.length === 0) {
+            // Player died, respawn
+            showDeathScreen();
+            setTimeout(() => {
+              const spawn = this.getRandomSpawn();
+              this.player.cells = [{
+                x: spawn.x,
+                y: spawn.y,
+                mass: 20,
+                vx: 0,
+                vy: 0,
+                mergeTime: 0
+              }];
+              hideDeathScreen();
+            }, 2000);
+          }
+          
+          // Bot vs bot
+          for (let j = i + 1; j < this.bots.length; j++) {
+            const other = this.bots[j];
+            const eatenBot = this.checkPlayerCollisions(bot, other);
+            if (eatenBot && eatenBot.cells.length === 0) {
+              const idx = this.bots.indexOf(eatenBot);
+              if (idx !== -1) {
+                this.bots.splice(idx, 1);
+                if (j > idx) j--;
+                setTimeout(() => this.spawnBot(), 3000);
+              }
+            }
+          }
+        }
+        
+        // Build game state
+        const allPlayers = [this.player, ...this.bots].filter(e => e.cells.length > 0);
+        
+        state.lastState = {
+          players: allPlayers.map(p => ({
+            id: p.id,
+            name: p.name,
+            color: p.color,
+            frozen: this.frozenEntities.has(p.id),
+            shielded: p.id === this.player.id && this.shieldActive,
+            cells: p.cells.map(c => ({
+              x: c.x,
+              y: c.y,
+              mass: c.mass,
+              radius: this.massToRadius(c.mass),
+              boostVx: c.boostVx || 0,
+              boostVy: c.boostVy || 0,
+              dirAngle: c.dirAngle || 0,
+              dirStrength: c.dirStrength || 0,
+              mergeTime: c.mergeTime || 0,
+              mergeGlow: c.mergeGlow || 0
+            }))
+          })),
+          pellets: this.pellets.map(p => ({ x: p.x, y: p.y, color: p.color })),
+          ejectedMass: this.ejectedMass.map(e => ({ x: e.x, y: e.y, mass: e.mass, color: e.color })),
+          viruses: this.viruses.map(v => ({ 
+            x: v.x, y: v.y, mass: v.mass, 
+            pulsePhase: v.pulsePhase, fedCount: v.fedCount 
+          })),
+          spikeProjectiles: this.spikeProjectiles.map(s => ({ x: s.x, y: s.y, vx: s.vx, vy: s.vy, stopped: s.stopped })),
+          freezeProjectiles: this.freezeProjectiles.map(f => ({ x: f.x, y: f.y, vx: f.vx, vy: f.vy, pulsePhase: f.pulsePhase, stopped: f.stopped })),
+          splitEffects: this.splitEffects.map(e => ({ ...e })),
+          explosionEffects: this.explosionEffects.map(e => ({ ...e })),
+          pickups: this.pickups.map(p => ({ x: p.x, y: p.y, type: p.type, pulsePhase: p.pulsePhase })),
+          mapRadius: this.MAP_RADIUS,
+          timestamp: Date.now()
+        };
+        
+        state.yourMass = this.getTotalMass(this.player);
+        
+        // Leaderboard
+        state.leaderboard = allPlayers
+          .map(p => ({ id: p.id, name: p.name, score: Math.floor(this.getTotalMass(p)) }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 10);
+        
+        // Update camera - SMART ZOOM based on mass AND spread of cells
+        if (this.player.cells.length > 0) {
+          const center = this.getCenter(this.player);
+          
+          // Smoother camera follow with slight prediction based on velocity
+          const avgVx = this.player.cells.reduce((s, c) => s + (c.vx || 0), 0) / this.player.cells.length;
+          const avgVy = this.player.cells.reduce((s, c) => s + (c.vy || 0), 0) / this.player.cells.length;
+          
+          const predictX = center.x + avgVx * 5; // Look ahead slightly
+          const predictY = center.y + avgVy * 5;
+          
+          state.camera.x += (predictX - state.camera.x) * 0.08;
+          state.camera.y += (predictY - state.camera.y) * 0.08;
+          
+          const totalMass = this.getTotalMass(this.player);
+          const cellCount = this.player.cells.length;
+          
+          // Calculate the SPREAD of cells - how far apart they are
+          let maxSpread = 0;
+          for (const cell of this.player.cells) {
+            const dist = this.distance(center.x, center.y, cell.x, cell.y);
+            const cellRadius = this.massToRadius(cell.mass);
+            const cellSpread = dist + cellRadius; // Include cell size
+            if (cellSpread > maxSpread) maxSpread = cellSpread;
+          }
+          
+          // Mass-based zoom (subtle)
+          // At mass 20: zoom ~1.0
+          // At mass 500: zoom ~0.85
+          // At mass 2000: zoom ~0.7
+          // At mass 5000: zoom ~0.6
+          const massZoom = 1.0 - (Math.log10(totalMass / 20 + 1) * 0.12);
+          
+          // Spread-based zoom - zoom out more when cells are far apart
+          // At spread 0: no change
+          // At spread 200: zoom out 5%
+          // At spread 500: zoom out 15%
+          // At spread 1000: zoom out 25%
+          const spreadZoom = 1 - Math.min(0.35, maxSpread / 3000);
+          
+          // Cell count bonus - slight extra zoom for many cells
+          const countZoom = 1 - (cellCount - 1) * 0.02;
+          
+          // Combine all factors
+          const targetZoom = Math.max(0.28, Math.min(1.0, massZoom * spreadZoom * countZoom));
+          
+          // Smooth transition - faster when zooming out (to keep cells in view)
+          const zoomSpeed = targetZoom < state.camera.zoom ? 0.06 : 0.03;
+          state.camera.zoom += (targetZoom - state.camera.zoom) * zoomSpeed;
+        }
+        
+        // Update ability cooldown UI
+        this.updateAbilityCooldowns();
+      },
+      
+      updateAbilityCooldowns() {
+        const now = Date.now();
+        
+        const spikeBtn = document.getElementById('spikeBtn');
+        const freezeBtn = document.getElementById('freezeBtn');
+        const shieldBtn = document.getElementById('shieldBtn');
+        const spikeChargesEl = document.getElementById('spikeCharges');
+        const freezeChargesEl = document.getElementById('freezeCharges');
+        const shieldChargesEl = document.getElementById('shieldCharges');
+        const shieldTimer = document.getElementById('shieldTimer');
+        const shieldTimeLeft = document.getElementById('shieldTimeLeft');
+        
+        // Update charge displays
+        if (spikeChargesEl) spikeChargesEl.textContent = this.spikeCharges;
+        if (freezeChargesEl) freezeChargesEl.textContent = this.freezeCharges;
+        if (shieldChargesEl) shieldChargesEl.textContent = this.shieldCharges;
+        
+        // Spike cooldown
+        const spikeCooldownLeft = Math.max(0, this.SPIKE_COOLDOWN - (now - this.lastSpikeTime));
+        const spikePercent = (spikeCooldownLeft / this.SPIKE_COOLDOWN) * 100;
+        if (spikeBtn) {
+          const overlay = spikeBtn.querySelector('.cooldown-overlay');
+          if (overlay) overlay.style.height = spikePercent + '%';
+          spikeBtn.classList.toggle('disabled', spikeCooldownLeft > 0 || this.spikeCharges <= 0);
+        }
+        
+        // Freeze cooldown
+        const freezeCooldownLeft = Math.max(0, this.FREEZE_COOLDOWN - (now - this.lastFreezeTime));
+        const freezePercent = (freezeCooldownLeft / this.FREEZE_COOLDOWN) * 100;
+        if (freezeBtn) {
+          const overlay = freezeBtn.querySelector('.cooldown-overlay');
+          if (overlay) overlay.style.height = freezePercent + '%';
+          freezeBtn.classList.toggle('disabled', freezeCooldownLeft > 0 || this.freezeCharges <= 0);
+        }
+        
+        // Shield cooldown and active state
+        const shieldCooldownLeft = Math.max(0, this.SHIELD_COOLDOWN - (now - this.lastShieldTime));
+        const shieldPercent = (shieldCooldownLeft / this.SHIELD_COOLDOWN) * 100;
+        if (shieldBtn) {
+          const overlay = shieldBtn.querySelector('.cooldown-overlay');
+          if (overlay) overlay.style.height = shieldPercent + '%';
+          shieldBtn.classList.toggle('disabled', shieldCooldownLeft > 0 || this.shieldCharges <= 0 || this.shieldActive);
+        }
+        
+        // Update shield active timer
+        if (this.shieldActive) {
+          if (now >= this.shieldEndTime) {
+            this.shieldActive = false;
+            shieldTimer.style.display = 'none';
+          } else {
+            const timeLeft = Math.ceil((this.shieldEndTime - now) / 1000);
+            shieldTimer.style.display = 'block';
+            shieldTimeLeft.textContent = timeLeft;
+          }
+        } else {
+          shieldTimer.style.display = 'none';
+        }
+      },
+      
+      // Check ejected mass collisions with entity
+      // Other players can eat your ejected mass after a very short delay
+      checkEjectedMassCollisions(entity) {
+        for (const cell of entity.cells) {
+          const cellRadius = this.massToRadius(cell.mass);
+          
+          for (let i = this.ejectedMass.length - 1; i >= 0; i--) {
+            const em = this.ejectedMass[i];
+            const age = Date.now() - em.createdAt;
+            
+            // Owner can't eat their own mass for 500ms
+            // Other players can eat it after just 200ms (so it travels a bit first)
+            if (em.ownerId === entity.id && age < 500) continue;
+            if (em.ownerId !== entity.id && age < 200) continue;
+            
+            const dist = this.distance(cell.x, cell.y, em.x, em.y);
+            if (dist < cellRadius) {
+              cell.mass += em.mass;
+              this.ejectedMass.splice(i, 1);
+            }
+          }
+        }
+      },
+      
+      // Check pickup collisions - only player can collect
+      checkPickupCollisions(entity) {
+        if (entity.id !== this.player.id) return; // Only player collects
+        
+        for (const cell of entity.cells) {
+          const cellRadius = this.massToRadius(cell.mass);
+          
+          for (let i = this.pickups.length - 1; i >= 0; i--) {
+            const pickup = this.pickups[i];
+            const dist = this.distance(cell.x, cell.y, pickup.x, pickup.y);
+            
+            if (dist < cellRadius + 25) {
+              // Collect the pickup
+              if (pickup.type === 'spike') {
+                this.spikeCharges = Math.min(this.MAX_CHARGES, this.spikeCharges + 2);
+              } else if (pickup.type === 'freeze') {
+                this.freezeCharges = Math.min(this.MAX_CHARGES, this.freezeCharges + 2);
+              } else if (pickup.type === 'shield') {
+                this.shieldCharges = Math.min(this.MAX_SHIELD_CHARGES, this.shieldCharges + 1);
+              }
+              
+              this.pickups.splice(i, 1);
+              
+              // Add visual effect
+              this.explosionEffects.push({
+                x: pickup.x,
+                y: pickup.y,
+                radius: 40,
+                life: 1,
+                color: pickup.type === 'spike' ? '#ff4444' : '#44aaff'
+              });
+            }
+          }
+        }
+      },
+      
+      // Update pickups spawning - spawn slowly over time
+      updatePickups() {
+        const now = Date.now();
+        
+        // Spawn new pickups slowly if needed (one at a time with delay)
+        if (this.pickups.length < this.PICKUP_COUNT) {
+          if (now - this.lastPickupSpawn > this.PICKUP_RESPAWN_TIME) {
+            this.spawnPickup();
+            this.lastPickupSpawn = now;
+          }
+        }
+        
+        // Update pulse phase for animation
+        for (const pickup of this.pickups) {
+          pickup.pulsePhase += 0.05;
+        }
+      }
+    };
+
+    // ============== CANVAS SETUP ==============
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const minimapCanvas = document.getElementById('minimap');
+    const minimapCtx = minimapCanvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      minimapCanvas.width = 150;
+      minimapCanvas.height = 150;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // ============== NETWORKING ==============
+    let ws = null;
+    let lastPingTime = 0;
+    let currentPing = 0;
+
+    function connect(serverUrl) {
+      ws = new WebSocket(serverUrl);
+      
+      ws.onopen = () => {
+        state.connected = true;
+        console.log('Connected to server');
+      };
+      
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        handleMessage(msg);
+      };
+      
+      ws.onclose = () => {
+        state.connected = false;
+        console.log('Disconnected from server');
+        setTimeout(() => {
+          if (!state.connected) {
+            document.getElementById('startScreen').style.display = 'flex';
+          }
+        }, 1000);
+      };
+      
+      ws.onerror = (err) => {
+        console.error('WebSocket error:', err);
+      };
+    }
+
+    function send(msg) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(msg));
+      }
+    }
+
+    function handleMessage(msg) {
+      switch (msg.type) {
+        case 'joined':
+          state.playerId = msg.playerId;
+          state.mapSize = msg.mapSize;
+          document.getElementById('startScreen').style.display = 'none';
+          document.getElementById('hud').style.display = 'block';
+          break;
+          
+        case 'gameState':
+          state.prevState = state.lastState;
+          state.lastState = {
+            players: msg.players,
+            pellets: msg.pellets,
+            ejectedMass: msg.ejectedMass,
+            timestamp: Date.now()
+          };
+          state.interpFactor = 0;
+          state.leaderboard = msg.leaderboard;
+          state.yourMass = msg.yourMass;
+          
+          // Check if we died (online mode only)
+          if (!state.offlineMode) {
+            const myPlayer = msg.players.find(p => p.id === state.playerId);
+            if (!myPlayer || myPlayer.cells.length === 0) {
+              showDeathScreen();
+            } else {
+              hideDeathScreen();
+              updateCamera(myPlayer);
+            }
+          }
+          
+          updateLeaderboard();
+          break;
+      }
+    }
+
+    function updateCamera(player) {
+      if (!player || !player.cells.length) return;
+      
+      // Calculate center of mass
+      let cx = 0, cy = 0, totalMass = 0;
+      for (const cell of player.cells) {
+        cx += cell.x * cell.mass;
+        cy += cell.y * cell.mass;
+        totalMass += cell.mass;
+      }
+      cx /= totalMass;
+      cy /= totalMass;
+      
+      // Smooth camera follow
+      state.camera.x += (cx - state.camera.x) * 0.1;
+      state.camera.y += (cy - state.camera.y) * 0.1;
+      
+      // Zoom out as player grows
+      const targetZoom = Math.max(0.3, Math.min(1, 800 / (Math.sqrt(totalMass) * 10 + 200)));
+      state.camera.zoom += (targetZoom - state.camera.zoom) * 0.05;
+    }
+
+    // ============== INPUT HANDLING ==============
+    let mouseX = 0, mouseY = 0;
+    let isMobile = 'ontouchstart' in window;
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (isMobile) return;
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      updateInput();
+    });
+
+    function updateInput() {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const dx = mouseX - centerX;
+      const dy = mouseY - centerY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      
+      // Small deadzone for responsive feel
+      const deadzone = 20;
+      
+      if (dist > deadzone) {
+        // Smooth ramp up to full speed
+        // Full intensity at ~100px from center
+        const intensity = Math.min(1, (dist - deadzone) / 80);
+        
+        // Smooth curve for fine control at low speeds, responsive at high
+        const curved = Math.pow(intensity, 0.7);
+        
+        // Smooth interpolation to new input (prevents jitter)
+        const targetX = (dx / dist) * curved;
+        const targetY = (dy / dist) * curved;
+        
+        state.input.x += (targetX - state.input.x) * 0.3;
+        state.input.y += (targetY - state.input.y) * 0.3;
+      } else {
+        // In deadzone - smooth gradual stop
+        state.input.x *= 0.85;
+        state.input.y *= 0.85;
+        if (Math.abs(state.input.x) < 0.01) state.input.x = 0;
+        if (Math.abs(state.input.y) < 0.01) state.input.y = 0;
+      }
+    }
+
+    // Virtual Joystick
+    const joystick = document.getElementById('joystick');
+    const joystickKnob = document.getElementById('joystickKnob');
+    let joystickActive = false;
+    let joystickCenter = { x: 0, y: 0 };
+
+    joystick.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const rect = joystick.getBoundingClientRect();
+      joystickCenter = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      };
+      joystickActive = true;
+    });
+
+    document.addEventListener('touchmove', (e) => {
+      if (!joystickActive) return;
+      e.preventDefault();
+      
+      const touch = e.touches[0];
+      const dx = touch.clientX - joystickCenter.x;
+      const dy = touch.clientY - joystickCenter.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const maxDist = 35;
+      
+      const clampedDist = Math.min(dist, maxDist);
+      const angle = Math.atan2(dy, dx);
+      
+      const knobX = Math.cos(angle) * clampedDist;
+      const knobY = Math.sin(angle) * clampedDist;
+      
+      joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+      
+      if (dist > 5) {
+        state.input.x = dx / dist;
+        state.input.y = dy / dist;
+      } else {
+        state.input.x = 0;
+        state.input.y = 0;
+      }
+    });
+
+    document.addEventListener('touchend', () => {
+      joystickActive = false;
+      joystickKnob.style.transform = 'translate(-50%, -50%)';
+      state.input.x = 0;
+      state.input.y = 0;
+    });
+
+    // Send input to server
+    setInterval(() => {
+      if (state.connected) {
+        send({ type: 'input', x: state.input.x, y: state.input.y });
+      }
+    }, 50);
+
+    // ============== RENDERING ==============
+    let lastFrameTime = Date.now();
+    let frameCount = 0;
+    let fps = 0;
+
+    // Particle system for trails
+    const particles = [];
+    const MAX_PARTICLES = 200;
+
+    function addParticle(x, y, color) {
+      if (particles.length >= MAX_PARTICLES) {
+        particles.shift();
+      }
+      particles.push({
+        x, y, color,
+        life: 1,
+        vx: (Math.random() - 0.5) * 2,
+        vy: (Math.random() - 0.5) * 2
+      });
+    }
+
+    function updateParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.02;
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+    }
+
+    function interpolate(prev, next, factor) {
+      if (!prev || !next) return next;
+      
+      const result = {
+        players: [],
+        pellets: next.pellets,
+        ejectedMass: next.ejectedMass
+      };
+      
+      for (const nextPlayer of next.players) {
+        const prevPlayer = prev.players.find(p => p.id === nextPlayer.id);
+        
+        if (prevPlayer) {
+          const interpPlayer = {
+            ...nextPlayer,
+            cells: nextPlayer.cells.map((cell, i) => {
+              const prevCell = prevPlayer.cells[i];
+              if (prevCell) {
+                return {
+                  ...cell,
+                  x: prevCell.x + (cell.x - prevCell.x) * factor,
+                  y: prevCell.y + (cell.y - prevCell.y) * factor
+                };
+              }
+              return cell;
+            })
+          };
+          result.players.push(interpPlayer);
+        } else {
+          result.players.push(nextPlayer);
+        }
+      }
+      
+      return result;
+    }
+
+    function worldToScreen(x, y) {
+      const zoom = state.camera.zoom;
+      return {
+        x: (x - state.camera.x) * zoom + canvas.width / 2,
+        y: (y - state.camera.y) * zoom + canvas.height / 2
+      };
+    }
+
+    function drawGrid() {
+      const gridSize = 100;
+      const zoom = state.camera.zoom;
+      
+      ctx.strokeStyle = 'rgba(128, 0, 255, 0.15)';
+      ctx.lineWidth = 1;
+      
+      const startX = Math.floor((state.camera.x - canvas.width / 2 / zoom) / gridSize) * gridSize;
+      const endX = Math.ceil((state.camera.x + canvas.width / 2 / zoom) / gridSize) * gridSize;
+      const startY = Math.floor((state.camera.y - canvas.height / 2 / zoom) / gridSize) * gridSize;
+      const endY = Math.ceil((state.camera.y + canvas.height / 2 / zoom) / gridSize) * gridSize;
+      
+      for (let x = startX; x <= endX; x += gridSize) {
+        const screen = worldToScreen(x, 0);
+        ctx.beginPath();
+        ctx.moveTo(screen.x, 0);
+        ctx.lineTo(screen.x, canvas.height);
+        ctx.stroke();
+      }
+      
+      for (let y = startY; y <= endY; y += gridSize) {
+        const screen = worldToScreen(0, y);
+        ctx.beginPath();
+        ctx.moveTo(0, screen.y);
+        ctx.lineTo(canvas.width, screen.y);
+        ctx.stroke();
+      }
+    }
+
+    function drawBoundary() {
+      const zoom = state.camera.zoom;
+      const mapRadius = state.lastState?.mapRadius || 4000;
+      
+      // Draw circular boundary
+      const center = worldToScreen(0, 0);
+      const radius = mapRadius * zoom;
+      
+      // Outer BURN ZONE - visible danger area outside the circle
+      const burnZoneWidth = 200 * zoom; // Matches BURN_ZONE_WIDTH
+      
+      // Danger zone gradient (extends outside the safe zone)
+      const dangerGradient = ctx.createRadialGradient(
+        center.x, center.y, radius,
+        center.x, center.y, radius + burnZoneWidth * 2
+      );
+      dangerGradient.addColorStop(0, 'rgba(255, 50, 0, 0.1)');
+      dangerGradient.addColorStop(0.3, 'rgba(255, 30, 0, 0.25)');
+      dangerGradient.addColorStop(0.6, 'rgba(255, 0, 0, 0.4)');
+      dangerGradient.addColorStop(1, 'rgba(200, 0, 0, 0.6)');
+      
+      // Draw outer danger ring
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, radius + burnZoneWidth * 2, 0, Math.PI * 2);
+      ctx.arc(center.x, center.y, radius, 0, Math.PI * 2, true); // Cut out inner circle
+      ctx.fillStyle = dangerGradient;
+      ctx.fill();
+      
+      // Animated fire/burn particles at the edge
+      const time = Date.now() / 1000;
+      ctx.save();
+      for (let i = 0; i < 60; i++) {
+        const angle = (i / 60) * Math.PI * 2 + time * 0.2;
+        const flicker = Math.sin(time * 5 + i) * 0.3 + 0.7;
+        const dist = radius + Math.sin(time * 3 + i * 0.5) * 10 * zoom;
+        
+        const px = center.x + Math.cos(angle) * dist;
+        const py = center.y + Math.sin(angle) * dist;
+        
+        ctx.beginPath();
+        ctx.arc(px, py, (3 + Math.sin(time * 4 + i) * 2) * zoom * flicker, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, ${100 + Math.floor(flicker * 100)}, 0, ${0.3 * flicker})`;
+        ctx.fill();
+      }
+      ctx.restore();
+      
+      // Main boundary circle - VISIBLE EDGE
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ff4400';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#ff4400';
+      ctx.shadowBlur = 25;
+      ctx.stroke();
+      
+      // Secondary glow line
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255, 100, 0, 0.5)';
+      ctx.lineWidth = 8;
+      ctx.shadowColor = '#ff6600';
+      ctx.shadowBlur = 40;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      
+      // Inner safe zone subtle glow
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, radius - 5, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255, 0, 255, 0.15)';
+      ctx.lineWidth = 10;
+      ctx.stroke();
+      
+      // Warning text segments around the edge
+      ctx.save();
+      ctx.font = `bold ${12 * zoom}px sans-serif`;
+      ctx.fillStyle = 'rgba(255, 100, 50, 0.6)';
+      ctx.textAlign = 'center';
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
+        const tx = center.x + Math.cos(angle) * (radius + 25 * zoom);
+        const ty = center.y + Math.sin(angle) * (radius + 25 * zoom);
+        ctx.save();
+        ctx.translate(tx, ty);
+        ctx.rotate(angle + Math.PI / 2);
+        ctx.fillText('⚠ BURN ZONE', 0, 0);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+    
+    function drawSpikeProjectiles(spikes) {
+      if (!spikes) return;
+      
+      const zoom = state.camera.zoom;
+      const time = Date.now() / 1000;
+      
+      for (const spike of spikes) {
+        const pos = worldToScreen(spike.x, spike.y);
+        const isStopped = spike.stopped;
+        
+        // Draw as a glowing BALL/ORB with spiky aura
+        const baseSize = 22 * zoom;
+        // Pulse more when stopped (waiting to be picked up or hit someone)
+        const pulse = isStopped ? 1 + Math.sin(time * 8) * 0.25 : 1 + Math.sin(time * 15) * 0.1;
+        const size = baseSize * pulse;
+        
+        // Outer danger ring when stopped
+        if (isStopped) {
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, size * 2.5, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(255, 50, 50, ' + (0.3 + Math.sin(time * 6) * 0.2) + ')';
+          ctx.lineWidth = 2 * zoom;
+          ctx.stroke();
+        }
+        
+        // Outer spiky aura
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        
+        // Rotating spikes around the ball (slower when stopped)
+        ctx.rotate(time * (isStopped ? 2 : 8));
+        ctx.strokeStyle = isStopped ? 'rgba(255, 50, 50, 0.8)' : 'rgba(255, 100, 50, 0.6)';
+        ctx.lineWidth = 2 * zoom;
+        for (let i = 0; i < 8; i++) {
+          ctx.beginPath();
+          ctx.moveTo(size * 0.8, 0);
+          ctx.lineTo(size * 1.5 * pulse, 0);
+          ctx.stroke();
+          ctx.rotate(Math.PI / 4);
+        }
+        ctx.restore();
+        
+        // Outer glow (bigger when stopped)
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, size * (isStopped ? 2 : 1.5), 0, Math.PI * 2);
+        const outerGlow = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, size * 2);
+        outerGlow.addColorStop(0, isStopped ? 'rgba(255, 80, 50, 0.5)' : 'rgba(255, 100, 50, 0.4)');
+        outerGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = outerGlow;
+        ctx.fill();
+        
+        // Main ball
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+        const gradient = ctx.createRadialGradient(
+          pos.x - size * 0.3, pos.y - size * 0.3, 0,
+          pos.x, pos.y, size
+        );
+        gradient.addColorStop(0, '#ff6644');
+        gradient.addColorStop(0.5, '#ff3322');
+        gradient.addColorStop(1, '#cc1100');
+        ctx.fillStyle = gradient;
+        ctx.shadowColor = '#ff4422';
+        ctx.shadowBlur = isStopped ? 35 : 25;
+        ctx.fill();
+        
+        // Inner bright core
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, size * 0.4, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 220, 180, 0.8)';
+        ctx.fill();
+        
+        // Motion trail only when moving
+        if (!isStopped) {
+          const angle = Math.atan2(spike.vy || 0, spike.vx || 0);
+          ctx.beginPath();
+          ctx.moveTo(pos.x - Math.cos(angle) * size, pos.y - Math.sin(angle) * size);
+          ctx.lineTo(pos.x - Math.cos(angle) * size * 3, pos.y - Math.sin(angle) * size * 3);
+          const trailGrad = ctx.createLinearGradient(
+            pos.x, pos.y,
+            pos.x - Math.cos(angle) * size * 3, pos.y - Math.sin(angle) * size * 3
+          );
+          trailGrad.addColorStop(0, 'rgba(255, 100, 50, 0.6)');
+          trailGrad.addColorStop(1, 'transparent');
+          ctx.strokeStyle = trailGrad;
+          ctx.lineWidth = size * 0.6;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        }
+        
+        ctx.shadowBlur = 0;
+      }
+    }
+    
+    function drawFreezeProjectiles(freezes) {
+      if (!freezes) return;
+      
+      const zoom = state.camera.zoom;
+      const time = Date.now() / 1000;
+      
+      for (const freeze of freezes) {
+        const pos = worldToScreen(freeze.x, freeze.y);
+        const isStopped = freeze.stopped;
+        
+        // Bigger pulse when stopped
+        const basePulse = 1 + Math.sin(freeze.pulsePhase) * (isStopped ? 0.25 : 0.15);
+        const size = 20 * zoom * basePulse;
+        
+        // Outer danger ring when stopped
+        if (isStopped) {
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, size * 2.5, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(100, 200, 255, ' + (0.3 + Math.sin(time * 6) * 0.2) + ')';
+          ctx.lineWidth = 2 * zoom;
+          ctx.stroke();
+          
+          // Icy mist when stopped
+          for (let m = 0; m < 8; m++) {
+            const mistAngle = time * 0.5 + (Math.PI * 2 * m) / 8;
+            const mistDist = size * 1.8 + Math.sin(time * 2 + m) * 10;
+            const mx = pos.x + Math.cos(mistAngle) * mistDist;
+            const my = pos.y + Math.sin(mistAngle) * mistDist;
+            
+            ctx.beginPath();
+            ctx.arc(mx, my, 5 * zoom, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(200, 240, 255, 0.4)';
+            ctx.fill();
+          }
+        }
+        
+        // Outer icy aura with orbiting particles
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        
+        // Orbiting ice crystals (slower when stopped)
+        for (let i = 0; i < 6; i++) {
+          const orbitAngle = time * (isStopped ? 2 : 6) + (Math.PI * 2 * i) / 6;
+          const orbitDist = size * (isStopped ? 1.6 : 1.3);
+          const cx = Math.cos(orbitAngle) * orbitDist;
+          const cy = Math.sin(orbitAngle) * orbitDist;
+          
+          ctx.beginPath();
+          ctx.arc(cx, cy, (isStopped ? 5 : 4) * zoom, 0, Math.PI * 2);
+          ctx.fillStyle = isStopped ? 'rgba(200, 240, 255, 0.9)' : 'rgba(150, 220, 255, 0.7)';
+          ctx.fill();
+        }
+        ctx.restore();
+        
+        // Outer glow (bigger when stopped)
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, size * (isStopped ? 2.2 : 1.8), 0, Math.PI * 2);
+        const outerGlow = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, size * 2.2);
+        outerGlow.addColorStop(0, isStopped ? 'rgba(150, 220, 255, 0.6)' : 'rgba(100, 200, 255, 0.5)');
+        outerGlow.addColorStop(0.5, 'rgba(50, 150, 255, 0.2)');
+        outerGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = outerGlow;
+        ctx.fill();
+        
+        // Main ice ball
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+        const gradient = ctx.createRadialGradient(
+          pos.x - size * 0.3, pos.y - size * 0.3, 0,
+          pos.x, pos.y, size
+        );
+        gradient.addColorStop(0, '#aaeeff');
+        gradient.addColorStop(0.4, '#66ccff');
+        gradient.addColorStop(1, '#3399dd');
+        ctx.fillStyle = gradient;
+        ctx.shadowColor = '#44aaff';
+        ctx.shadowBlur = isStopped ? 40 : 25;
+        ctx.fill();
+        
+        // Shiny highlight
+        ctx.beginPath();
+        ctx.arc(pos.x - size * 0.25, pos.y - size * 0.25, size * 0.35, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.fill();
+        
+        // Inner snowflake pattern (bigger when stopped)
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        ctx.rotate(time * (isStopped ? 0.5 : 2));
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.lineWidth = (isStopped ? 2 : 1.5) * zoom;
+        for (let i = 0; i < 6; i++) {
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(size * (isStopped ? 0.7 : 0.6), 0);
+          ctx.stroke();
+          ctx.rotate(Math.PI / 3);
+        }
+        ctx.restore();
+        
+        // Motion trail only when moving
+        if (!isStopped && (freeze.vx || freeze.vy)) {
+          const angle = Math.atan2(freeze.vy || 0, freeze.vx || 0);
+          ctx.beginPath();
+          ctx.moveTo(pos.x - Math.cos(angle) * size, pos.y - Math.sin(angle) * size);
+          ctx.lineTo(pos.x - Math.cos(angle) * size * 2.5, pos.y - Math.sin(angle) * size * 2.5);
+          const trailGrad = ctx.createLinearGradient(
+            pos.x, pos.y,
+            pos.x - Math.cos(angle) * size * 2.5, pos.y - Math.sin(angle) * size * 2.5
+          );
+          trailGrad.addColorStop(0, 'rgba(100, 200, 255, 0.5)');
+          trailGrad.addColorStop(1, 'transparent');
+          ctx.strokeStyle = trailGrad;
+          ctx.lineWidth = size * 0.5;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        }
+        
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    function drawPellets(pellets) {
+      const zoom = state.camera.zoom;
+      
+      for (const pellet of pellets) {
+        const pos = worldToScreen(pellet.x, pellet.y);
+        
+        // Skip if off screen
+        if (pos.x < -20 || pos.x > canvas.width + 20 || 
+            pos.y < -20 || pos.y > canvas.height + 20) continue;
+        
+        const radius = 5 * zoom;
+        
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = pellet.color;
+        ctx.shadowColor = pellet.color;
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    function drawEjectedMass(ejected) {
+      const zoom = state.camera.zoom;
+      
+      for (const em of ejected) {
+        const pos = worldToScreen(em.x, em.y);
+        const radius = Math.sqrt(em.mass) * 3 * zoom;
+        
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = em.color;
+        ctx.shadowColor = em.color;
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    function drawPlayers(players) {
+      const zoom = state.camera.zoom;
+      
+      // Sort by mass (smaller on top for visibility)
+      const sorted = [...players].sort((a, b) => {
+        const massA = a.cells.reduce((s, c) => s + c.mass, 0);
+        const massB = b.cells.reduce((s, c) => s + c.mass, 0);
+        return massB - massA;
+      });
+      
+      for (const player of sorted) {
+        const isFrozen = player.frozen;
+        
+        for (const cell of player.cells) {
+          const pos = worldToScreen(cell.x, cell.y);
+          const radius = cell.radius * zoom;
+          
+          // Draw frozen overlay if frozen
+          if (isFrozen) {
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, radius * 1.3, 0, Math.PI * 2);
+            const frozenGlow = ctx.createRadialGradient(pos.x, pos.y, radius * 0.5, pos.x, pos.y, radius * 1.3);
+            frozenGlow.addColorStop(0, 'rgba(100, 200, 255, 0.3)');
+            frozenGlow.addColorStop(1, 'rgba(100, 200, 255, 0)');
+            ctx.fillStyle = frozenGlow;
+            ctx.fill();
+          }
+          
+          // Draw SHIELD AURA if player has shield active
+          if (player.shielded) {
+            const time = Date.now() / 1000;
+            const pulse = 1 + Math.sin(time * 6) * 0.15; // Pulsing effect
+            const shieldRadius = radius * 1.35 * pulse;
+            
+            // Outer pulsing ring
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, shieldRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(68, 255, 136, ${0.6 + Math.sin(time * 8) * 0.3})`;
+            ctx.lineWidth = 4 * zoom;
+            ctx.shadowColor = '#44ff88';
+            ctx.shadowBlur = 25;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            
+            // Inner glow
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, shieldRadius * 0.95, 0, Math.PI * 2);
+            const shieldGlow = ctx.createRadialGradient(pos.x, pos.y, radius, pos.x, pos.y, shieldRadius);
+            shieldGlow.addColorStop(0, 'rgba(68, 255, 136, 0.2)');
+            shieldGlow.addColorStop(0.5, 'rgba(68, 255, 136, 0.1)');
+            shieldGlow.addColorStop(1, 'rgba(68, 255, 136, 0)');
+            ctx.fillStyle = shieldGlow;
+            ctx.fill();
+            
+            // Rotating shield particles
+            ctx.save();
+            ctx.translate(pos.x, pos.y);
+            for (let p = 0; p < 6; p++) {
+              const particleAngle = time * 2 + (Math.PI * 2 * p) / 6;
+              const px = Math.cos(particleAngle) * shieldRadius * 0.9;
+              const py = Math.sin(particleAngle) * shieldRadius * 0.9;
+              
+              ctx.beginPath();
+              ctx.arc(px, py, 4 * zoom, 0, Math.PI * 2);
+              ctx.fillStyle = `rgba(150, 255, 200, ${0.7 + Math.sin(time * 10 + p) * 0.3})`;
+              ctx.shadowColor = '#44ff88';
+              ctx.shadowBlur = 10;
+              ctx.fill();
+            }
+            ctx.restore();
+            ctx.shadowBlur = 0;
+            
+            // Hexagonal shield pattern (subtle)
+            ctx.save();
+            ctx.translate(pos.x, pos.y);
+            ctx.rotate(time * 0.5);
+            ctx.strokeStyle = 'rgba(68, 255, 136, 0.3)';
+            ctx.lineWidth = 1 * zoom;
+            for (let h = 0; h < 6; h++) {
+              const hAngle = (Math.PI * 2 * h) / 6;
+              const nextAngle = (Math.PI * 2 * (h + 1)) / 6;
+              ctx.beginPath();
+              ctx.moveTo(Math.cos(hAngle) * shieldRadius * 0.85, Math.sin(hAngle) * shieldRadius * 0.85);
+              ctx.lineTo(Math.cos(nextAngle) * shieldRadius * 0.85, Math.sin(nextAngle) * shieldRadius * 0.85);
+              ctx.stroke();
+            }
+            ctx.restore();
+          }
+          
+          // Check if cell is boosting (from split)
+          const boostMag = Math.sqrt((cell.boostVx || 0) ** 2 + (cell.boostVy || 0) ** 2);
+          const isBoosting = boostMag > 50;
+          
+          // Draw motion trail for boosting cells
+          if (isBoosting) {
+            const trailAngle = Math.atan2(cell.boostVy || 0, cell.boostVx || 0);
+            const trailLength = Math.min(radius * 2, boostMag / 10) * zoom;
+            
+            // Trail gradient
+            ctx.save();
+            ctx.translate(pos.x, pos.y);
+            ctx.rotate(trailAngle + Math.PI); // Point backwards
+            
+            const trailGradient = ctx.createLinearGradient(0, 0, trailLength, 0);
+            trailGradient.addColorStop(0, player.color + '80');
+            trailGradient.addColorStop(1, 'transparent');
+            
+            ctx.fillStyle = trailGradient;
+            ctx.beginPath();
+            ctx.moveTo(0, -radius * 0.6);
+            ctx.lineTo(trailLength, 0);
+            ctx.lineTo(0, radius * 0.6);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.restore();
+          }
+          
+          // Add trail particles for moving cells
+          if (player.id === state.playerId) {
+            const particleChance = isBoosting ? 0.8 : 0.3;
+            if (Math.random() < particleChance) {
+              addParticle(cell.x + (Math.random() - 0.5) * radius, 
+                         cell.y + (Math.random() - 0.5) * radius, 
+                         player.color);
+            }
+          }
+          
+          // Enhanced glow for boosting cells
+          const glowMultiplier = isBoosting ? 1.5 : 1.2;
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, radius * glowMultiplier, 0, Math.PI * 2);
+          const glowGradient = ctx.createRadialGradient(pos.x, pos.y, radius * 0.5, pos.x, pos.y, radius * glowMultiplier);
+          glowGradient.addColorStop(0, player.color + (isBoosting ? '60' : '40'));
+          glowGradient.addColorStop(1, 'transparent');
+          ctx.fillStyle = glowGradient;
+          ctx.fill();
+          
+          // Merge glow effect when cells just merged
+          if (cell.mergeGlow && cell.mergeGlow > 0) {
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, radius * 1.4, 0, Math.PI * 2);
+            const mergeGlowGrad = ctx.createRadialGradient(pos.x, pos.y, radius * 0.5, pos.x, pos.y, radius * 1.4);
+            mergeGlowGrad.addColorStop(0, player.color + Math.floor(cell.mergeGlow * 100).toString(16).padStart(2, '0'));
+            mergeGlowGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = mergeGlowGrad;
+            ctx.fill();
+          }
+          
+          // Cell body
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+          
+          const gradient = ctx.createRadialGradient(pos.x - radius * 0.3, pos.y - radius * 0.3, 0, pos.x, pos.y, radius);
+          gradient.addColorStop(0, player.color);
+          gradient.addColorStop(0.7, player.color + 'cc');
+          gradient.addColorStop(1, player.color + '88');
+          
+          ctx.fillStyle = gradient;
+          ctx.shadowColor = isFrozen ? '#44aaff' : player.color;
+          ctx.shadowBlur = isBoosting ? 25 : 15;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          
+          // Timer display removed - cleaner look
+          
+          // VISIBLE BORDER - always visible, thicker and more prominent
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+          
+          if (isFrozen) {
+            // Icy border when frozen
+            ctx.strokeStyle = 'rgba(150, 220, 255, 0.95)';
+            ctx.lineWidth = 5 * zoom;
+            ctx.shadowColor = '#44aaff';
+            ctx.shadowBlur = 15;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            
+            // Ice crystals on frozen cells
+            ctx.save();
+            ctx.translate(pos.x, pos.y);
+            ctx.strokeStyle = 'rgba(200, 240, 255, 0.6)';
+            ctx.lineWidth = 2 * zoom;
+            for (let a = 0; a < 8; a++) {
+              ctx.rotate(Math.PI / 4);
+              ctx.beginPath();
+              ctx.moveTo(radius * 0.7, 0);
+              ctx.lineTo(radius * 1.1, 0);
+              ctx.stroke();
+            }
+            ctx.restore();
+          } else {
+            // Normal visible border - ALWAYS prominent
+            // Outer dark border for contrast
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.lineWidth = (isBoosting ? 6 : 5) * zoom;
+            ctx.stroke();
+            
+            // Inner colored border matching player color
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = player.color;
+            ctx.lineWidth = (isBoosting ? 4 : 3) * zoom;
+            ctx.shadowColor = player.color;
+            ctx.shadowBlur = isBoosting ? 20 : 10;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            
+            // White highlight on top edge
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, radius, -Math.PI * 0.8, -Math.PI * 0.2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 2 * zoom;
+            ctx.stroke();
+          }
+          
+          // DIRECTION INDICATOR - show where cell is heading (only for player's cells)
+          if (player.id === state.playerId && cell.dirStrength > 0.1) {
+            const dirAlpha = Math.min(1, cell.dirStrength);
+            const arrowDist = radius + 15 * zoom;
+            const arrowSize = 12 * zoom * dirAlpha;
+            
+            ctx.save();
+            ctx.translate(pos.x, pos.y);
+            ctx.rotate(cell.dirAngle);
+            
+            // Arrow/chevron indicator
+            ctx.beginPath();
+            ctx.moveTo(arrowDist + arrowSize, 0);
+            ctx.lineTo(arrowDist - arrowSize * 0.3, -arrowSize * 0.6);
+            ctx.lineTo(arrowDist, 0);
+            ctx.lineTo(arrowDist - arrowSize * 0.3, arrowSize * 0.6);
+            ctx.closePath();
+            
+            ctx.fillStyle = `rgba(255, 255, 255, ${dirAlpha * 0.7})`;
+            ctx.shadowColor = player.color;
+            ctx.shadowBlur = 10;
+            ctx.fill();
+            
+            // Speed lines behind arrow
+            ctx.strokeStyle = `rgba(255, 255, 255, ${dirAlpha * 0.4})`;
+            ctx.lineWidth = 2 * zoom;
+            for (let line = 0; line < 3; line++) {
+              const lineOffset = (line - 1) * arrowSize * 0.5;
+              const lineStart = arrowDist - arrowSize * 0.8 - line * 5 * zoom;
+              ctx.beginPath();
+              ctx.moveTo(lineStart, lineOffset);
+              ctx.lineTo(lineStart - arrowSize * 0.6, lineOffset);
+              ctx.stroke();
+            }
+            
+            ctx.restore();
+            ctx.shadowBlur = 0;
+          }
+        }
+        
+        // Draw name and mass at center
+        if (player.cells.length > 0) {
+          let cx = 0, cy = 0, totalMass = 0;
+          for (const cell of player.cells) {
+            cx += cell.x * cell.mass;
+            cy += cell.y * cell.mass;
+            totalMass += cell.mass;
+          }
+          cx /= totalMass;
+          cy /= totalMass;
+          
+          const pos = worldToScreen(cx, cy);
+          
+          ctx.font = `bold ${Math.max(14, 20 * zoom)}px 'Segoe UI', sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          
+          // Name shadow
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+          ctx.fillText(player.name, pos.x + 2, pos.y + 2);
+          
+          // Name
+          ctx.fillStyle = '#fff';
+          ctx.fillText(player.name, pos.x, pos.y);
+          
+          // Mass
+          ctx.font = `${Math.max(10, 14 * zoom)}px 'Segoe UI', sans-serif`;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+          ctx.fillText(Math.floor(totalMass), pos.x, pos.y + 20 * zoom);
+        }
+      }
+    }
+
+    function drawParticles() {
+      const zoom = state.camera.zoom;
+      
+      for (const p of particles) {
+        const pos = worldToScreen(p.x, p.y);
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 3 * p.life * zoom, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + Math.floor(p.life * 255).toString(16).padStart(2, '0');
+        ctx.fill();
+      }
+    }
+    
+    function drawSplitEffects(effects) {
+      if (!effects) return;
+      
+      const zoom = state.camera.zoom;
+      
+      for (const effect of effects) {
+        const pos = worldToScreen(effect.x, effect.y);
+        const alpha = effect.life;
+        
+        // Draw a burst/streak effect
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        ctx.rotate(effect.angle);
+        
+        // Streak lines
+        const streakLength = effect.radius * 3 * zoom * effect.life;
+        ctx.strokeStyle = effect.color + Math.floor(alpha * 200).toString(16).padStart(2, '0');
+        ctx.lineWidth = 3 * zoom * alpha;
+        ctx.shadowColor = effect.color;
+        ctx.shadowBlur = 15 * alpha;
+        
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(streakLength, 0);
+        ctx.stroke();
+        
+        // Side streaks
+        ctx.lineWidth = 2 * zoom * alpha;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(streakLength * 0.6, -streakLength * 0.3);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(streakLength * 0.6, streakLength * 0.3);
+        ctx.stroke();
+        
+        ctx.restore();
+        ctx.shadowBlur = 0;
+      }
+    }
+    
+    function drawViruses(viruses) {
+      if (!viruses) return;
+      
+      const zoom = state.camera.zoom;
+      
+      for (const virus of viruses) {
+        const pos = worldToScreen(virus.x, virus.y);
+        
+        // Skip if off screen
+        if (pos.x < -100 || pos.x > canvas.width + 100 || 
+            pos.y < -100 || pos.y > canvas.height + 100) continue;
+        
+        const baseRadius = Math.sqrt(virus.mass) * 4 * zoom;
+        const pulseAmount = 1 + Math.sin(virus.pulsePhase) * 0.05;
+        const radius = baseRadius * pulseAmount;
+        const spikeCount = 11;
+        const spikeLength = radius * 0.4;
+        
+        // Draw spiky virus
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        
+        // Outer glow
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 1.3, 0, Math.PI * 2);
+        const glowGradient = ctx.createRadialGradient(0, 0, radius * 0.5, 0, 0, radius * 1.3);
+        glowGradient.addColorStop(0, 'rgba(0, 255, 100, 0.3)');
+        glowGradient.addColorStop(1, 'transparent');
+        ctx.fillStyle = glowGradient;
+        ctx.fill();
+        
+        // Main body with spikes
+        ctx.beginPath();
+        for (let i = 0; i < spikeCount; i++) {
+          const angle = (Math.PI * 2 * i) / spikeCount - Math.PI / 2;
+          const nextAngle = (Math.PI * 2 * (i + 0.5)) / spikeCount - Math.PI / 2;
+          
+          // Spike tip
+          const spikeX = Math.cos(angle) * (radius + spikeLength);
+          const spikeY = Math.sin(angle) * (radius + spikeLength);
+          
+          // Valley between spikes
+          const valleyX = Math.cos(nextAngle) * radius * 0.85;
+          const valleyY = Math.sin(nextAngle) * radius * 0.85;
+          
+          if (i === 0) {
+            ctx.moveTo(spikeX, spikeY);
+          } else {
+            ctx.lineTo(spikeX, spikeY);
+          }
+          ctx.lineTo(valleyX, valleyY);
+        }
+        ctx.closePath();
+        
+        // Fill with gradient
+        const virusGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radius + spikeLength);
+        virusGradient.addColorStop(0, '#00ff66');
+        virusGradient.addColorStop(0.6, '#00cc44');
+        virusGradient.addColorStop(1, '#009933');
+        ctx.fillStyle = virusGradient;
+        ctx.shadowColor = '#00ff66';
+        ctx.shadowBlur = 20;
+        ctx.fill();
+        
+        // Border
+        ctx.strokeStyle = 'rgba(150, 255, 150, 0.6)';
+        ctx.lineWidth = 2 * zoom;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        
+        // Show feed progress
+        if (virus.fedCount > 0) {
+          ctx.fillStyle = '#fff';
+          ctx.font = `${12 * zoom}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.fillText(`${virus.fedCount}/7`, 0, 5 * zoom);
+        }
+        
+        ctx.restore();
+      }
+    }
+    
+    function drawExplosionEffects(effects) {
+      if (!effects) return;
+      
+      const zoom = state.camera.zoom;
+      
+      for (const effect of effects) {
+        const pos = worldToScreen(effect.x, effect.y);
+        const alpha = effect.life;
+        const radius = effect.radius * zoom;
+        
+        // Expanding ring
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = effect.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+        ctx.lineWidth = 5 * zoom * alpha;
+        ctx.shadowColor = effect.color;
+        ctx.shadowBlur = 30 * alpha;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        
+        // Inner flash
+        if (alpha > 0.5) {
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, radius * 0.5 * (1 - alpha), 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 255, 255, ' + (alpha - 0.5) * 2 + ')';
+          ctx.fill();
+        }
+        
+        // Radial lines
+        const lineCount = 12;
+        for (let i = 0; i < lineCount; i++) {
+          const angle = (Math.PI * 2 * i) / lineCount;
+          ctx.beginPath();
+          ctx.moveTo(pos.x + Math.cos(angle) * radius * 0.3, pos.y + Math.sin(angle) * radius * 0.3);
+          ctx.lineTo(pos.x + Math.cos(angle) * radius, pos.y + Math.sin(angle) * radius);
+          ctx.strokeStyle = effect.color + Math.floor(alpha * 150).toString(16).padStart(2, '0');
+          ctx.lineWidth = 2 * zoom * alpha;
+          ctx.stroke();
+        }
+      }
+    }
+    
+    function drawPickups(pickups) {
+      if (!pickups) return;
+      
+      const zoom = state.camera.zoom;
+      const time = Date.now() / 1000;
+      
+      for (const pickup of pickups) {
+        const pos = worldToScreen(pickup.x, pickup.y);
+        
+        // Skip if off screen
+        if (pos.x < -50 || pos.x > canvas.width + 50 || 
+            pos.y < -50 || pos.y > canvas.height + 50) continue;
+        
+        const baseSize = 25 * zoom;
+        const pulse = 1 + Math.sin(pickup.pulsePhase) * 0.2;
+        const size = baseSize * pulse;
+        const rotation = time * 2;
+        
+        const isSpike = pickup.type === 'spike';
+        const color = isSpike ? '#ff4444' : '#44aaff';
+        const glowColor = isSpike ? 'rgba(255, 68, 68, 0.5)' : 'rgba(68, 170, 255, 0.5)';
+        
+        // Outer glow ring
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, size * 2, 0, Math.PI * 2);
+        const glowGrad = ctx.createRadialGradient(pos.x, pos.y, size * 0.5, pos.x, pos.y, size * 2);
+        glowGrad.addColorStop(0, glowColor);
+        glowGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = glowGrad;
+        ctx.fill();
+        
+        // Rotating outer ring
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        ctx.rotate(rotation);
+        ctx.strokeStyle = color + '88';
+        ctx.lineWidth = 2 * zoom;
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 1.4, 0, Math.PI * 0.5);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 1.4, Math.PI, Math.PI * 1.5);
+        ctx.stroke();
+        ctx.restore();
+        
+        // Main pickup body
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+        const gradient = ctx.createRadialGradient(
+          pos.x - size * 0.3, pos.y - size * 0.3, 0,
+          pos.x, pos.y, size
+        );
+        gradient.addColorStop(0, isSpike ? '#ff8866' : '#88ccff');
+        gradient.addColorStop(0.5, color);
+        gradient.addColorStop(1, isSpike ? '#aa2222' : '#2266aa');
+        ctx.fillStyle = gradient;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 20;
+        ctx.fill();
+        
+        // Border
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2 * zoom;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        
+        // Icon in center
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        
+        if (isSpike) {
+          // Spike/explosion icon
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2 * zoom;
+          for (let i = 0; i < 8; i++) {
+            ctx.rotate(Math.PI / 4);
+            ctx.beginPath();
+            ctx.moveTo(size * 0.2, 0);
+            ctx.lineTo(size * 0.6, 0);
+            ctx.stroke();
+          }
+        } else {
+          // Snowflake icon
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2 * zoom;
+          for (let i = 0; i < 6; i++) {
+            ctx.rotate(Math.PI / 3);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(size * 0.5, 0);
+            ctx.moveTo(size * 0.3, 0);
+            ctx.lineTo(size * 0.4, -size * 0.15);
+            ctx.moveTo(size * 0.3, 0);
+            ctx.lineTo(size * 0.4, size * 0.15);
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+        
+        // "+2" text
+        ctx.font = `bold ${10 * zoom}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('+2', pos.x, pos.y + size * 1.8);
+      }
+    }
+
+    function drawMinimap() {
+      const mmSize = 150;
+      const scale = mmSize / state.mapSize;
+      
+      minimapCtx.clearRect(0, 0, mmSize, mmSize);
+      
+      // Background
+      minimapCtx.fillStyle = 'rgba(10, 10, 20, 0.8)';
+      minimapCtx.fillRect(0, 0, mmSize, mmSize);
+      
+      // Draw viruses as green dots
+      if (state.lastState && state.lastState.viruses) {
+        for (const virus of state.lastState.viruses) {
+          const mx = (virus.x + state.mapSize / 2) * scale;
+          const my = (virus.y + state.mapSize / 2) * scale;
+          
+          minimapCtx.beginPath();
+          minimapCtx.arc(mx, my, 3, 0, Math.PI * 2);
+          minimapCtx.fillStyle = '#00ff66';
+          minimapCtx.fill();
+        }
+      }
+      
+      // Draw players as dots
+      if (state.lastState) {
+        for (const player of state.lastState.players) {
+          let cx = 0, cy = 0, totalMass = 0;
+          for (const cell of player.cells) {
+            cx += cell.x * cell.mass;
+            cy += cell.y * cell.mass;
+            totalMass += cell.mass;
+          }
+          if (totalMass === 0) continue;
+          cx /= totalMass;
+          cy /= totalMass;
+          
+          const mx = (cx + state.mapSize / 2) * scale;
+          const my = (cy + state.mapSize / 2) * scale;
+          
+          minimapCtx.beginPath();
+          minimapCtx.arc(mx, my, Math.max(2, Math.sqrt(totalMass) * 0.3), 0, Math.PI * 2);
+          minimapCtx.fillStyle = player.id === state.playerId ? '#00ffff' : player.color;
+          minimapCtx.fill();
+        }
+      }
+      
+      // Border
+      minimapCtx.strokeStyle = 'rgba(255, 0, 255, 0.5)';
+      minimapCtx.lineWidth = 1;
+      minimapCtx.strokeRect(0, 0, mmSize, mmSize);
+    }
+
+    function render() {
+      // Clear
+      ctx.fillStyle = '#0a0a12';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Background gradient
+      const bgGradient = ctx.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, 0,
+        canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height)
+      );
+      bgGradient.addColorStop(0, '#1a1a2e');
+      bgGradient.addColorStop(0.5, '#0a0a12');
+      bgGradient.addColorStop(1, '#050508');
+      ctx.fillStyle = bgGradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      if (!state.lastState) {
+        requestAnimationFrame(render);
+        return;
+      }
+      
+      // Interpolate
+      state.interpFactor = Math.min(1, state.interpFactor + 0.15);
+      const currentState = interpolate(state.prevState, state.lastState, state.interpFactor);
+      
+      // Update particles
+      updateParticles();
+      
+      // Draw
+      drawGrid();
+      drawBoundary();
+      drawParticles();
+      drawSplitEffects(currentState.splitEffects);
+      drawExplosionEffects(currentState.explosionEffects);
+      drawPellets(currentState.pellets);
+      drawPickups(state.lastState?.pickups);
+      drawViruses(currentState.viruses);
+      drawEjectedMass(currentState.ejectedMass);
+      drawSpikeProjectiles(currentState.spikeProjectiles);
+      drawFreezeProjectiles(currentState.freezeProjectiles);
+      drawPlayers(currentState.players);
+      drawMinimap();
+      
+      // FPS counter
+      frameCount++;
+      const now = Date.now();
+      if (now - lastFrameTime >= 1000) {
+        fps = frameCount;
+        frameCount = 0;
+        lastFrameTime = now;
+        document.getElementById('fps').textContent = fps;
+      }
+      
+      // Mass is now shown on player cell, no separate display needed
+      
+      requestAnimationFrame(render);
+    }
+
+    function updateLeaderboard() {
+      const list = document.getElementById('leaderboardList');
+      list.innerHTML = '';
+      
+      state.leaderboard.forEach((entry, index) => {
+        const div = document.createElement('div');
+        div.className = 'leader-entry' + (entry.id === state.playerId ? ' you' : '');
+        div.innerHTML = `<span>${index + 1}. ${entry.name}</span><span>${entry.score}</span>`;
+        list.appendChild(div);
+      });
+    }
+
+    function showDeathScreen() {
+      document.getElementById('deathScreen').style.display = 'flex';
+      document.getElementById('finalMass').textContent = Math.floor(state.yourMass);
+    }
+
+    function hideDeathScreen() {
+      document.getElementById('deathScreen').style.display = 'none';
+    }
+
+    // ============== START GAME ==============
+    const colorOptions = document.querySelectorAll('.color-option');
+    let selectedColor = '#ff00ff';
+    let offlineGameLoop = null;
+
+    colorOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        colorOptions.forEach(o => o.classList.remove('selected'));
+        option.classList.add('selected');
+        selectedColor = option.dataset.color;
+      });
+    });
+
+    // Online play button
+    document.getElementById('playBtn').addEventListener('click', () => {
+      const name = document.getElementById('nameInput').value || 'Cell';
+      const serverUrl = document.getElementById('serverInput').value || 'ws://localhost:3000';
+      const statusEl = document.getElementById('connectionStatus');
+      const playBtn = document.getElementById('playBtn');
+      
+      playBtn.disabled = true;
+      playBtn.textContent = 'CONNECTING...';
+      statusEl.textContent = '';
+      statusEl.style.color = '#ffaa00';
+      statusEl.textContent = 'Connecting to server...';
+      
+      connect(serverUrl);
+      
+      let attempts = 0;
+      const maxAttempts = 50; // 5 seconds timeout
+      
+      const checkConnection = setInterval(() => {
+        attempts++;
+        
+        if (state.connected) {
+          send({ type: 'join', name, color: selectedColor });
+          clearInterval(checkConnection);
+          statusEl.textContent = '';
+        } else if (attempts >= maxAttempts) {
+          clearInterval(checkConnection);
+          playBtn.disabled = false;
+          playBtn.textContent = 'PLAY ONLINE';
+          statusEl.style.color = '#ff6666';
+          statusEl.textContent = 'Failed to connect. Is the server running?';
+          if (ws) ws.close();
+        }
+      }, 100);
+    });
+
+    // Offline play button
+    document.getElementById('offlineBtn').addEventListener('click', () => {
+      const name = document.getElementById('nameInput').value || 'Cell';
+      
+      state.offlineMode = true;
+      offlineGame.init(name, selectedColor);
+      
+      document.getElementById('startScreen').style.display = 'none';
+      document.getElementById('hud').style.display = 'block';
+      
+      // Start offline game loop
+      let lastTime = Date.now();
+      offlineGameLoop = setInterval(() => {
+        const now = Date.now();
+        const dt = (now - lastTime) / 1000;
+        lastTime = now;
+        offlineGame.update(dt);
+        updateLeaderboard();
+      }, 1000 / 60);
+    });
+
+    // Allow pressing Enter to start
+    document.getElementById('nameInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('offlineBtn').click();
+      }
+    });
+
+    // Split button for offline mode
+    document.getElementById('splitBtn').addEventListener('click', () => {
+      if (state.offlineMode) {
+        offlineGame.handleSplit(offlineGame.player);
+      } else {
+        send({ type: 'split' });
+      }
+    });
+    
+    document.getElementById('ejectBtn').addEventListener('click', () => {
+      if (state.offlineMode) {
+        offlineGame.handleEject(offlineGame.player);
+      } else {
+        send({ type: 'eject' });
+      }
+    });
+
+    // Keyboard controls
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (state.offlineMode) {
+          offlineGame.handleSplit(offlineGame.player);
+        } else {
+          send({ type: 'split' });
+        }
+      } else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+        e.preventDefault();
+        if (state.offlineMode) {
+          offlineGame.handleEject(offlineGame.player);
+        } else {
+          send({ type: 'eject' });
+        }
+      } else if (e.code === 'KeyQ') {
+        // SPIKE ABILITY
+        e.preventDefault();
+        if (state.offlineMode) {
+          offlineGame.throwSpike(offlineGame.player);
+        }
+      } else if (e.code === 'KeyE') {
+        // FREEZE ABILITY
+        e.preventDefault();
+        if (state.offlineMode) {
+          offlineGame.throwFreeze(offlineGame.player);
+        }
+      } else if (e.code === 'KeyW') {
+        // SHIELD ABILITY
+        e.preventDefault();
+        if (state.offlineMode) {
+          offlineGame.activateShield();
+        }
+      }
+    });
+    
+    // Ability button click handlers
+    document.getElementById('spikeBtn').addEventListener('click', () => {
+      if (state.offlineMode) {
+        offlineGame.throwSpike(offlineGame.player);
+      }
+    });
+    
+    document.getElementById('freezeBtn').addEventListener('click', () => {
+      if (state.offlineMode) {
+        offlineGame.throwFreeze(offlineGame.player);
+      }
+    });
+    
+    document.getElementById('shieldBtn').addEventListener('click', () => {
+      if (state.offlineMode) {
+        offlineGame.activateShield();
+      }
+    });
+
+    // Start render loop
+    render();
+  </script>
+</body>
+</html>
